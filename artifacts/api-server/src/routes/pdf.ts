@@ -282,11 +282,11 @@ router.post("/generate", async (req: Request, res: Response) => {
     });
 
     // — Draw all question content —
-    let globalNum = 1;
     for (const { subject, year, questions } of questionSets) {
       drawSectionBanner(doc, subject, year, questions.length);
+      let qNum = 1;
       for (const q of questions) {
-        drawQuestion(doc, q, globalNum++, includeAnswers === true);
+        drawQuestion(doc, q, qNum++, includeAnswers === true);
       }
     }
 
@@ -307,7 +307,6 @@ router.post("/generate", async (req: Request, res: Response) => {
 
       const cols = 6;
       const colW = contentW / cols;
-      let keyNum = 1;
 
       for (const { subject, questions } of questionSets) {
         if (questions.length === 0) continue;
@@ -319,6 +318,7 @@ router.post("/generate", async (req: Request, res: Response) => {
 
         let col = 0;
         let rowY = doc.y;
+        let keyNum = 1;
 
         questions.forEach((q) => {
           if (col === cols) { col = 0; rowY += 20; }
