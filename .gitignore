@@ -47,6 +47,3 @@ Thumbs.db
 # Replit
 .cache/
 .local/
-
-# Vercel generated bundle (re-created during build)
-api/app-bundle.cjs

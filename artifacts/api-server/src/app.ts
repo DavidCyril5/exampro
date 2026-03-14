@@ -1,9 +1,9 @@
-import express from "express";
+import express, { type Express } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import router from "./routes";
 
-const app = express();
+const app: Express = express();
 
 app.use(cors({ origin: true, credentials: true }));
 app.use(cookieParser());
