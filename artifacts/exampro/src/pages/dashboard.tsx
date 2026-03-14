@@ -3,7 +3,7 @@ import { useAuth } from "@/context/AuthContext";
 import { motion } from "framer-motion";
 import {
   FileText, Download, Loader2, Plus, Trash2, Settings2,
-  BookOpen, CalendarDays, Clock, CheckSquare, Eye, Key
+  BookOpen, CalendarDays, Clock, CheckSquare, Eye, EyeOff, Key
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,11 +41,14 @@ const JAMB_SUBJECTS = [
   "Civic Education",
 ];
 
+const YEARS = ["2024", "2023", "2022", "2021", "2020", "2019", "2018", "2017", "2016", "2015", "2014", "2013", "2012", "2011", "2010", "Mixed"];
+
 const QUESTION_COUNTS = [5, 10, 15, 20, 25, 30, 40, 50];
 
 interface SubjectEntry {
   id: string;
   subject: string;
+  year: string;
   count: number;
 }
 
@@ -65,8 +68,8 @@ export default function Dashboard() {
   const [includeAnswers, setIncludeAnswers] = useState(false);
   const [includeAnswerKey, setIncludeAnswerKey] = useState(true);
   const [subjects, setSubjects] = useState<SubjectEntry[]>([
-    { id: generateId(), subject: "English", count: 10 },
-    { id: generateId(), subject: "Mathematics", count: 10 },
+    { id: generateId(), subject: "English", year: "2020", count: 10 },
+    { id: generateId(), subject: "Mathematics", year: "2020", count: 10 },
   ]);
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -75,7 +78,7 @@ export default function Dashboard() {
       toast({ title: "Maximum 4 subjects", description: "JAMB allows a maximum of 4 subjects.", variant: "destructive" });
       return;
     }
-    setSubjects((prev) => [...prev, { id: generateId(), subject: "Physics", count: 10 }]);
+    setSubjects((prev) => [...prev, { id: generateId(), subject: "Physics", year: "2020", count: 10 }]);
   };
 
   const removeSubject = (id: string) => {
@@ -115,12 +118,12 @@ export default function Dashboard() {
         duration,
         subjects: subjects.map((s) => s.subject.toLowerCase()),
         questionsPerSubject: subjects[0]?.count || 10,
-        year: "",
+        year: subjects[0]?.year === "Mixed" ? "" : subjects[0]?.year || "2020",
         includeAnswers,
         includeAnswerKey,
         subjectDetails: subjects.map((s) => ({
           subject: s.subject.toLowerCase(),
-          year: "",
+          year: s.year === "Mixed" ? "" : s.year,
           count: s.count,
         })),
       };
@@ -297,7 +300,7 @@ export default function Dashboard() {
                       <span className="text-xs font-bold text-primary/60">S{idx + 1}</span>
                     </div>
 
-                    <div className="col-span-7">
+                    <div className="col-span-5">
                       <Select value={entry.subject} onValueChange={(v) => updateSubject(entry.id, "subject", v)}>
                         <SelectTrigger className="h-9 text-xs bg-background/60 border-white/10">
                           <SelectValue />
@@ -311,6 +314,19 @@ export default function Dashboard() {
                     </div>
 
                     <div className="col-span-3">
+                      <Select value={entry.year} onValueChange={(v) => updateSubject(entry.id, "year", v)}>
+                        <SelectTrigger className="h-9 text-xs bg-background/60 border-white/10">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {YEARS.map((y) => (
+                            <SelectItem key={y} value={y} className="text-xs">{y}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="col-span-2">
                       <Select value={String(entry.count)} onValueChange={(v) => updateSubject(entry.id, "count", parseInt(v))}>
                         <SelectTrigger className="h-9 text-xs bg-background/60 border-white/10">
                           <SelectValue />
@@ -409,7 +425,10 @@ export default function Dashboard() {
                         </div>
                         <span className="font-medium">{s.subject}</span>
                       </div>
-                      <span className="text-primary font-bold">{s.count}Q</span>
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <span>{s.year}</span>
+                        <span className="text-primary font-bold">{s.count}Q</span>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -477,6 +496,10 @@ export default function Dashboard() {
                   <li className="flex items-start gap-2">
                     <span className="text-primary mt-0.5">•</span>
                     English Language is compulsory for most courses
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-primary mt-0.5">•</span>
+                    Use "Mixed" year to get varied questions across years
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-primary mt-0.5">•</span>
