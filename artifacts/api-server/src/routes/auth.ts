@@ -1,13 +1,13 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { createHash, randomBytes } from "crypto";
-import { eq } from "drizzle-orm";
-import { db, usersTable, sessionsTable } from "@workspace/db";
+import { getDb } from "../lib/mongodb";
 import { RegisterBody, LoginBody } from "@workspace/api-zod";
 
 const router: IRouter = Router();
 
 function hashPassword(password: string): string {
-  return createHash("sha256").update(password + process.env.PASSWORD_SALT || "exampro_salt_2024").digest("hex");
+  const salt = process.env.PASSWORD_SALT || "exampro_salt_2024";
+  return createHash("sha256").update(password + salt).digest("hex");
 }
 
 function generateToken(): string {
@@ -16,11 +16,8 @@ function generateToken(): string {
 
 function getTokenFromRequest(req: Request): string | null {
   const authHeader = req.headers.authorization;
-  if (authHeader?.startsWith("Bearer ")) {
-    return authHeader.slice(7);
-  }
-  const cookie = req.cookies?.auth_token;
-  return cookie || null;
+  if (authHeader?.startsWith("Bearer ")) return authHeader.slice(7);
+  return req.cookies?.auth_token || null;
 }
 
 router.post("/register", async (req: Request, res: Response) => {
@@ -37,25 +34,29 @@ router.post("/register", async (req: Request, res: Response) => {
     return;
   }
 
-  const existing = await db.select().from(usersTable).where(eq(usersTable.email, email.toLowerCase())).limit(1);
-  if (existing.length > 0) {
+  const db = await getDb();
+  const users = db.collection("users");
+
+  const existing = await users.findOne({ email: email.toLowerCase() });
+  if (existing) {
     res.status(409).json({ error: "email_taken", message: "An account with this email already exists" });
     return;
   }
 
-  const passwordHash = hashPassword(password);
-  const [user] = await db.insert(usersTable).values({
+  const now = new Date();
+  const result = await users.insertOne({
     fullName,
     email: email.toLowerCase(),
-    passwordHash,
-  }).returning();
+    passwordHash: hashPassword(password),
+    createdAt: now,
+  });
 
   res.status(201).json({
     user: {
-      id: user.id,
-      fullName: user.fullName,
-      email: user.email,
-      createdAt: user.createdAt,
+      id: result.insertedId.toString(),
+      fullName,
+      email: email.toLowerCase(),
+      createdAt: now,
     },
     message: "Account created successfully",
   });
@@ -70,14 +71,11 @@ router.post("/login", async (req: Request, res: Response) => {
 
   const { email, password } = parsed.data;
 
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.email, email.toLowerCase())).limit(1);
-  if (!user) {
-    res.status(401).json({ error: "invalid_credentials", message: "Invalid email or password" });
-    return;
-  }
+  const db = await getDb();
+  const users = db.collection("users");
 
-  const passwordHash = hashPassword(password);
-  if (user.passwordHash !== passwordHash) {
+  const user = await users.findOne({ email: email.toLowerCase() });
+  if (!user || user.passwordHash !== hashPassword(password)) {
     res.status(401).json({ error: "invalid_credentials", message: "Invalid email or password" });
     return;
   }
@@ -85,9 +83,11 @@ router.post("/login", async (req: Request, res: Response) => {
   const token = generateToken();
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-  await db.insert(sessionsTable).values({
-    userId: user.id,
+  const sessions = db.collection("sessions");
+  await sessions.insertOne({
+    userId: user._id,
     token,
+    createdAt: new Date(),
     expiresAt,
   });
 
@@ -100,7 +100,7 @@ router.post("/login", async (req: Request, res: Response) => {
 
   res.json({
     user: {
-      id: user.id,
+      id: user._id.toString(),
       fullName: user.fullName,
       email: user.email,
       createdAt: user.createdAt,
@@ -112,7 +112,8 @@ router.post("/login", async (req: Request, res: Response) => {
 router.post("/logout", async (req: Request, res: Response) => {
   const token = getTokenFromRequest(req);
   if (token) {
-    await db.delete(sessionsTable).where(eq(sessionsTable.token, token));
+    const db = await getDb();
+    await db.collection("sessions").deleteOne({ token });
   }
   res.clearCookie("auth_token");
   res.json({ message: "Logged out successfully" });
@@ -125,21 +126,23 @@ router.get("/me", async (req: Request, res: Response) => {
     return;
   }
 
-  const [session] = await db.select().from(sessionsTable).where(eq(sessionsTable.token, token)).limit(1);
+  const db = await getDb();
+  const session = await db.collection("sessions").findOne({ token });
+
   if (!session || session.expiresAt < new Date()) {
     res.clearCookie("auth_token");
     res.status(401).json({ error: "unauthorized", message: "Session expired" });
     return;
   }
 
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, session.userId)).limit(1);
+  const user = await db.collection("users").findOne({ _id: session.userId });
   if (!user) {
     res.status(401).json({ error: "unauthorized", message: "User not found" });
     return;
   }
 
   res.json({
-    id: user.id,
+    id: user._id.toString(),
     fullName: user.fullName,
     email: user.email,
     createdAt: user.createdAt,
