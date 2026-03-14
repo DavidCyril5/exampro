@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "buildCommand": "PORT=3000 BASE_PATH=/ pnpm --filter @workspace/exampro run build",
+  "outputDirectory": "artifacts/exampro/dist/public",
+  "installCommand": "pnpm install",
+  "functions": {
+    "api/index.ts": {
+      "memory": 1024,
+      "maxDuration": 60
+    }
+  },
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  }
+}
