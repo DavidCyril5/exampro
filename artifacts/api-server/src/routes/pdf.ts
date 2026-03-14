@@ -64,35 +64,55 @@ function cleanText(text: string): string {
     .trim();
 }
 
-function drawPageHeader(doc: PDFKit.PDFDocument, title: string, subtitle: string, examDate: string, duration: string) {
+function drawPageHeader(doc: PDFKit.PDFDocument, title: string, jambRegNo: string, duration: string, fullName: string) {
   const W = doc.page.width;
   const margin = 42;
+  const contentW = W - margin * 2;
 
-  doc.rect(0, 0, W, 120).fill("#ffffff");
+  doc.rect(0, 0, W, 130).fill("#ffffff");
 
-  doc.fontSize(20).fillColor("#000000").font("Helvetica-Bold")
-    .text("EXAMCORE", margin, 22);
-  doc.fontSize(7.5).fillColor("#000000").font("Helvetica")
-    .text("JAMB CBT PRACTICE PLATFORM", margin, 46);
+  // — Branding (left) —
+  doc.fontSize(16).fillColor("#000000").font("Helvetica-Bold")
+    .text("EXAMCORE", margin, 14);
   doc.fontSize(7).fillColor("#000000").font("Helvetica")
-    .text("www.examcore.ng", margin, 58);
+    .text("JAMB CBT PRACTICE PLATFORM", margin, 34);
+  doc.fontSize(7).fillColor("#000000").font("Helvetica")
+    .text("www.examcore.ng", margin, 45);
 
-  const centerX = W / 2;
-  doc.fontSize(14).fillColor("#000000").font("Helvetica-Bold")
-    .text(title.toUpperCase(), centerX - 180, 18, { width: 360, align: "center" });
+  // — Exam title (centered, bold) —
+  doc.fontSize(15).fillColor("#000000").font("Helvetica-Bold")
+    .text(title.toUpperCase(), margin + 90, 16, { width: contentW - 90, align: "center" });
 
-  if (subtitle) {
-    doc.fontSize(9).fillColor("#000000").font("Helvetica")
-      .text(subtitle, centerX - 180, 38, { width: 360, align: "center" });
-  }
+  // — Divider between branding/title and info fields —
+  doc.rect(margin, 62, contentW, 0.75).fill("#000000");
 
-  if (duration) {
-    doc.fontSize(8).fillColor("#000000").font("Helvetica-Bold")
-      .text(`Duration: ${duration}`, W - margin - 120, 24, { width: 120, align: "right" });
-  }
+  // — Info row: FULL NAME | JAMB REG NO | DURATION —
+  const infoY = 70;
+  const thirdW = contentW / 3;
 
-  doc.rect(margin, 118, W - margin * 2, 1).fill("#000000");
-  doc.y = 134;
+  // Full Name
+  doc.fontSize(8).fillColor("#000000").font("Helvetica-Bold")
+    .text("FULL NAME:", margin, infoY);
+  doc.fontSize(9).fillColor("#000000").font("Helvetica-Bold")
+    .text(fullName || "________________________________", margin, infoY + 12, { width: thirdW - 10 });
+
+  // JAMB REG NO
+  const regX = margin + thirdW;
+  doc.fontSize(8).fillColor("#000000").font("Helvetica-Bold")
+    .text("JAMB REG NO:", regX, infoY);
+  doc.fontSize(9).fillColor("#000000").font("Helvetica-Bold")
+    .text(jambRegNo || "________________________________", regX, infoY + 12, { width: thirdW - 10 });
+
+  // Duration
+  const durX = margin + thirdW * 2;
+  doc.fontSize(8).fillColor("#000000").font("Helvetica-Bold")
+    .text("DURATION:", durX, infoY);
+  doc.fontSize(9).fillColor("#000000").font("Helvetica-Bold")
+    .text(duration || "—", durX, infoY + 12, { width: thirdW - 4 });
+
+  // — Bottom border —
+  doc.rect(margin, 126, contentW, 1).fill("#000000");
+  doc.y = 142;
 }
 
 function drawPageFooter(doc: PDFKit.PDFDocument, pageNum: number, totalPages: number, schoolName: string) {
@@ -228,7 +248,7 @@ router.post("/generate", async (req: Request, res: Response) => {
 
     const doc = new PDFDocument({
       size: "A4",
-      margins: { top: 145, bottom: 46, left: 42, right: 42 },
+      margins: { top: 158, bottom: 46, left: 42, right: 42 },
       bufferPages: true,
       info: {
         Title: title || "ExamCore Practice Paper",
@@ -246,8 +266,8 @@ router.post("/generate", async (req: Request, res: Response) => {
 
       for (let i = 0; i < range.count; i++) {
         doc.switchToPage(i);
-        drawPageHeader(doc, title || "JAMB CBT Practice Paper", subtitle || "Unified Tertiary Matriculation Examination", examDate || "", duration || "");
-        drawPageFooter(doc, i + 1, totalPages, schoolName || "ExamCore Admin");
+        drawPageHeader(doc, title || "JAMB CBT Practice Paper", subtitle || "", duration || "", schoolName || "");
+        drawPageFooter(doc, i + 1, totalPages, schoolName || "");
       }
 
       doc.flushPages();
