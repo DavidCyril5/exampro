@@ -19,15 +19,21 @@ interface AlocQuestion {
   examyear: string;
 }
 
-async function fetchQuestions(subject: string, year: string, count: number): Promise<AlocQuestion[]> {
+const JAMB_YEARS = ["2001","2002","2003","2004","2005","2006","2007","2008","2009","2010","2011","2012","2013","2014","2015","2016","2017","2018","2019","2020","2021","2022","2023"];
+
+function randomYear(): string {
+  return JAMB_YEARS[Math.floor(Math.random() * JAMB_YEARS.length)];
+}
+
+async function fetchQuestions(subject: string, _year: string, count: number): Promise<AlocQuestion[]> {
   const questions: AlocQuestion[] = [];
   const seenIds = new Set<number>();
   const maxAttempts = Math.min(count * 4, 80);
 
   for (let i = 0; i < maxAttempts && questions.length < count; i++) {
     try {
-      const yearParam = year ? `&year=${year}` : "";
-      const url = `${ALOC_BASE}/q?subject=${encodeURIComponent(subject)}&type=utme${yearParam}`;
+      const year = randomYear();
+      const url = `${ALOC_BASE}/q?subject=${encodeURIComponent(subject)}&type=utme&year=${year}`;
       const res = await axios.get(url, {
         headers: { AccessToken: ALOC_TOKEN },
         timeout: 8000,
@@ -118,7 +124,7 @@ function drawPageFooter(doc: PDFKit.PDFDocument, pageNum: number, totalPages: nu
     .text(`Page ${pageNum} of ${totalPages}`, W - 120, H - 22, { width: 80, align: "right" });
 }
 
-function drawSectionBanner(doc: PDFKit.PDFDocument, subject: string, year: string, count: number) {
+function drawSectionBanner(doc: PDFKit.PDFDocument, subject: string, _year: string, count: number) {
   const W = doc.page.width;
   const margin = 42;
   const y = doc.y + 4;
@@ -130,7 +136,7 @@ function drawSectionBanner(doc: PDFKit.PDFDocument, subject: string, year: strin
     .text(`${subject.toUpperCase()}`, margin + 16, y + 8, { width: 200 });
 
   doc.fontSize(9).fillColor("#3b82f6").font("Helvetica")
-    .text(`${year || "Mixed Years"} UTME  •  ${count} Questions`, W - margin - 180, y + 9, { width: 180, align: "right" });
+    .text(`UTME  •  ${count} Questions`, W - margin - 180, y + 9, { width: 180, align: "right" });
 
   doc.y = y + 40;
 }
