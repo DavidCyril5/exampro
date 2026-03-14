@@ -58,7 +58,7 @@ export default function Dashboard() {
   const { toast } = useToast();
 
   const [title, setTitle] = useState("JAMB CBT Practice Examination");
-  const [subtitle, setSubtitle] = useState("Unified Tertiary Matriculation Examination");
+  const [subtitle, setSubtitle] = useState("");
   const [schoolName, setSchoolName] = useState("");
   const [duration, setDuration] = useState("2 Hours");
   const [includeAnswers, setIncludeAnswers] = useState(false);
