@@ -25,31 +25,43 @@ function randomYear(): string {
   return JAMB_YEARS[Math.floor(Math.random() * JAMB_YEARS.length)];
 }
 
-async function fetchQuestions(subject: string, _year: string, count: number): Promise<AlocQuestion[]> {
-  const questions: AlocQuestion[] = [];
-  const seenIds = new Set<number>();
-  const maxAttempts = Math.min(count * 4, 80);
+async function fetchOneQuestion(subject: string): Promise<AlocQuestion | null> {
+  const year = randomYear();
+  const url = `${ALOC_BASE}/q?subject=${encodeURIComponent(subject)}&type=utme&year=${year}`;
+  try {
+    const res = await axios.get(url, {
+      headers: { AccessToken: ALOC_TOKEN },
+      timeout: 8000,
+    });
+    if (res.data?.status === 200 && res.data?.data) {
+      const q = Array.isArray(res.data.data) ? res.data.data[0] : res.data.data;
+      return q || null;
+    }
+  } catch {
+  }
+  return null;
+}
 
-  for (let i = 0; i < maxAttempts && questions.length < count; i++) {
-    try {
-      const year = randomYear();
-      const url = `${ALOC_BASE}/q?subject=${encodeURIComponent(subject)}&type=utme&year=${year}`;
-      const res = await axios.get(url, {
-        headers: { AccessToken: ALOC_TOKEN },
-        timeout: 8000,
-      });
-      if (res.data?.status === 200 && res.data?.data) {
-        const q = Array.isArray(res.data.data) ? res.data.data[0] : res.data.data;
-        if (q && !seenIds.has(q.id)) {
-          seenIds.add(q.id);
-          questions.push(q);
-        }
+async function fetchQuestions(subject: string, _year: string, count: number): Promise<AlocQuestion[]> {
+  const seenIds = new Set<number>();
+  const results: AlocQuestion[] = [];
+  const maxAttempts = count * 5;
+  const BATCH = 10;
+
+  for (let i = 0; i < maxAttempts && results.length < count; i += BATCH) {
+    const batchSize = Math.min(BATCH, maxAttempts - i);
+    const batch = await Promise.all(
+      Array.from({ length: batchSize }, () => fetchOneQuestion(subject))
+    );
+    for (const q of batch) {
+      if (q && !seenIds.has(q.id) && results.length < count) {
+        seenIds.add(q.id);
+        results.push(q);
       }
-    } catch {
     }
   }
 
-  return questions.slice(0, count);
+  return results.slice(0, count);
 }
 
 function cleanText(text: string): string {
@@ -239,12 +251,12 @@ router.post("/generate", async (req: Request, res: Response) => {
   }
 
   try {
-    const questionSets: { subject: string; year: string; questions: AlocQuestion[] }[] = [];
-
-    for (const detail of subjectDetails) {
-      const qs = await fetchQuestions(detail.subject, detail.year || "", detail.count || 10);
-      questionSets.push({ subject: detail.subject, year: detail.year || "Mixed", questions: qs });
-    }
+    const questionSets = await Promise.all(
+      subjectDetails.map(async (detail: any) => {
+        const qs = await fetchQuestions(detail.subject, detail.year || "", detail.count || 10);
+        return { subject: detail.subject, year: detail.year || "Mixed", questions: qs };
+      })
+    );
 
     const doc = new PDFDocument({
       size: "A4",
