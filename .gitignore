@@ -48,5 +48,6 @@ Thumbs.db
 .cache/
 .local/
 
-# Vercel generated bundle (re-created during build)
+# Generated deployment bundles (re-created during build)
 api/app-bundle.cjs
+netlify/functions/api.js

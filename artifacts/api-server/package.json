@@ -7,6 +7,7 @@
     "dev": "NODE_ENV=development tsx ./src/index.ts",
     "build": "tsx ./build.ts",
     "build:vercel": "tsx ./build-vercel.ts",
+    "build:netlify": "tsx ./build-netlify.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
@@ -19,7 +20,8 @@
     "drizzle-orm": "catalog:",
     "express": "^5",
     "mongodb": "^7.1.0",
-    "pdfkit": "^0.17.2"
+    "pdfkit": "^0.17.2",
+    "serverless-http": "^4.0.0"
   },
   "devDependencies": {
     "@types/cookie-parser": "^1.4.10",
