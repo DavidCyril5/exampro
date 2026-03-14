@@ -1,0 +1,65 @@
+Netlify Build                                                 
+8:19:16 PM: ────────────────────────────────────────────────────────────────
+8:19:16 PM: ​
+8:19:16 PM: ❯ Version
+8:19:16 PM:   @netlify/build 35.8.7
+8:19:16 PM: ​
+8:19:16 PM: ❯ Flags
+8:19:16 PM:   accountId: 69b59736c1a75f24c22662f3
+8:19:16 PM:   baseRelDir: true
+8:19:16 PM:   buildId: 69b5b4a44f766de57aedacea
+8:19:16 PM:   deployId: 69b5b4a44f766de57aedacec
+8:19:16 PM:   packagePath: artifacts/exampro
+8:19:16 PM: ​
+8:19:16 PM: ❯ Current directory
+8:19:16 PM:   /opt/build/repo
+8:19:16 PM: ​
+8:19:16 PM: ❯ Config file
+8:19:16 PM:   No config file was defined: using default values.
+8:19:16 PM: ​
+8:19:16 PM: ❯ Context
+8:19:16 PM:   production
+8:19:16 PM: ​
+8:19:16 PM: Build command from Netlify app                                
+8:19:16 PM: ────────────────────────────────────────────────────────────────
+8:19:16 PM: ​
+8:19:16 PM: $ pnpm --filter @workspace/exampro... run build
+8:19:16 PM: Scope: 2 of 9 workspace projects
+8:19:16 PM: artifacts/exampro build$ vite build --config vite.config.ts
+8:19:17 PM: artifacts/exampro build: failed to load config from /opt/build/repo/artifacts/exampro/vite.config.ts
+8:19:17 PM: artifacts/exampro build: error during build:
+8:19:17 PM: artifacts/exampro build: Error: PORT environment variable is required but was not provided.
+8:19:17 PM: artifacts/exampro build:     at file:///opt/build/repo/artifacts/exampro/node_modules/.vite-temp/vite.config.ts.timestamp-1773515957113-e692a1db3be4c.mjs:10:9
+8:19:17 PM: artifacts/exampro build:     at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+8:19:17 PM: artifacts/exampro build:     at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:665:26)
+8:19:17 PM: artifacts/exampro build:     at async loadConfigFromBundledFile (file:///opt/build/repo/node_modules/.pnpm/vite@7.3.1_@types+node@25.3.5_jiti@2.6.1_lightningcss@1.31.1_tsx@4.21.0_yaml@2.8.2/node_modules/vite/dist/node/chunks/config.js:35909:12)
+8:19:17 PM: artifacts/exampro build:     at async bundleAndLoadConfigFile (file:///opt/build/repo/node_modules/.pnpm/vite@7.3.1_@types+node@25.3.5_jiti@2.6.1_lightningcss@1.31.1_tsx@4.21.0_yaml@2.8.2/node_modules/vite/dist/node/chunks/config.js:35797:17)
+8:19:17 PM: artifacts/exampro build:     at async loadConfigFromFile (file:///opt/build/repo/node_modules/.pnpm/vite@7.3.1_@types+node@25.3.5_jiti@2.6.1_lightningcss@1.31.1_tsx@4.21.0_yaml@2.8.2/node_modules/vite/dist/node/chunks/config.js:35764:42)
+8:19:17 PM: artifacts/exampro build:     at async resolveConfig (file:///opt/build/repo/node_modules/.pnpm/vite@7.3.1_@types+node@25.3.5_jiti@2.6.1_lightningcss@1.31.1_tsx@4.21.0_yaml@2.8.2/node_modules/vite/dist/node/chunks/config.js:35413:22)
+8:19:17 PM: artifacts/exampro build:     at async createBuilder (file:///opt/build/repo/node_modules/.pnpm/vite@7.3.1_@types+node@25.3.5_jiti@2.6.1_lightningcss@1.31.1_tsx@4.21.0_yaml@2.8.2/node_modules/vite/dist/node/chunks/config.js:33875:19)
+8:19:17 PM: artifacts/exampro build:     at async CAC.<anonymous> (file:///opt/build/repo/node_modules/.pnpm/vite@7.3.1_@types+node@25.3.5_jiti@2.6.1_lightningcss@1.31.1_tsx@4.21.0_yaml@2.8.2/node_modules/vite/dist/node/cli.js:629:10)
+8:19:17 PM: artifacts/exampro build: Failed
+8:19:17 PM: /opt/build/repo/artifacts/exampro:
+8:19:17 PM:  ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @workspace/exampro@0.0.0 build: `vite build --config vite.config.ts`
+8:19:17 PM: Exit status 1
+8:19:17 PM: ​
+8:19:17 PM: "build.command" failed                                        
+8:19:17 PM: ────────────────────────────────────────────────────────────────
+8:19:17 PM: ​
+8:19:17 PM:   Error message
+8:19:17 PM:   Command failed with exit code 1: pnpm --filter @workspace/exampro... run build (https://ntl.fyi/exit-code-1)
+8:19:17 PM: ​
+8:19:17 PM:   Error location
+8:19:17 PM:   In Build command from Netlify app:
+8:19:17 PM:   pnpm --filter @workspace/exampro... run build
+8:19:17 PM: ​
+8:19:17 PM:   Resolved config
+8:19:17 PM:   build:
+8:19:17 PM:     command: pnpm --filter @workspace/exampro... run build
+8:19:17 PM:     commandOrigin: ui
+8:19:17 PM:     publish: /opt/build/repo/artifacts/exampro/dist
+8:19:17 PM:     publishOrigin: ui
+8:19:17 PM: Build failed due to a user error: Build script returned non-zero exit code: 2
+8:19:17 PM: Failing build: Failed to build site
+8:19:18 PM: Finished processing build request in 16.943s
+8:19:17 PM: Failed during stage 'building site': Build script returned non-zero exit code: 2 (https://ntl.fyi/exit-code-2)
