@@ -42,11 +42,13 @@ async function fetchOneQuestion(subject: string): Promise<AlocQuestion | null> {
   return null;
 }
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 async function fetchQuestions(subject: string, _year: string, count: number): Promise<AlocQuestion[]> {
   const seenIds = new Set<number>();
   const results: AlocQuestion[] = [];
-  const maxAttempts = count * 5;
-  const BATCH = 10;
+  const maxAttempts = count * 6;
+  const BATCH = 5;
 
   for (let i = 0; i < maxAttempts && results.length < count; i += BATCH) {
     const batchSize = Math.min(BATCH, maxAttempts - i);
@@ -59,6 +61,7 @@ async function fetchQuestions(subject: string, _year: string, count: number): Pr
         results.push(q);
       }
     }
+    if (results.length < count) await sleep(120);
   }
 
   return results.slice(0, count);
@@ -251,12 +254,11 @@ router.post("/generate", async (req: Request, res: Response) => {
   }
 
   try {
-    const questionSets = await Promise.all(
-      subjectDetails.map(async (detail: any) => {
-        const qs = await fetchQuestions(detail.subject, detail.year || "", detail.count || 10);
-        return { subject: detail.subject, year: detail.year || "Mixed", questions: qs };
-      })
-    );
+    const questionSets: { subject: string; year: string; questions: AlocQuestion[] }[] = [];
+    for (const detail of subjectDetails) {
+      const qs = await fetchQuestions(detail.subject, detail.year || "", detail.count || 10);
+      questionSets.push({ subject: detail.subject, year: detail.year || "Mixed", questions: qs });
+    }
 
     const doc = new PDFDocument({
       size: "A4",
