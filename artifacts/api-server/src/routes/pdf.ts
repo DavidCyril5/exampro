@@ -290,46 +290,51 @@ router.post("/generate", async (req: Request, res: Response) => {
 
     if (includeAnswerKey && !includeAnswers && questionSets.some((s) => s.questions.length > 0)) {
       doc.addPage();
-      doc.y = 150;
+      doc.y = 158;
 
       const W = doc.page.width;
       const margin = 42;
       const contentW = W - margin * 2;
 
-      doc.rect(margin, doc.y, contentW, 30).fill("#f0f0f0").stroke("#000000");
+      const bannerY = doc.y;
+      doc.rect(margin, bannerY, contentW, 30).fill("#f0f0f0").stroke("#000000");
       doc.fontSize(14).fillColor("#000000").font("Helvetica-Bold")
-        .text("ANSWER KEY", margin + 10, doc.y + 8, { width: contentW - 20 });
-      doc.y += 44;
+        .text("ANSWER KEY", margin + 10, bannerY + 8, { width: contentW - 20, lineBreak: false });
+      doc.y = bannerY + 44;
 
+      const cols = 6;
+      const colW = contentW / cols;
       let keyNum = 1;
+
       for (const { subject, questions } of questionSets) {
         if (questions.length === 0) continue;
 
+        const subjectY = doc.y;
         doc.fontSize(10).fillColor("#000000").font("Helvetica-Bold")
-          .text(subject.toUpperCase(), margin, doc.y);
-        doc.y += 14;
+          .text(subject.toUpperCase(), margin, subjectY, { lineBreak: false });
+        doc.y = subjectY + 18;
 
-        const cols = 6;
-        const colW = contentW / cols;
         let col = 0;
+        let rowY = doc.y;
 
         questions.forEach((q) => {
-          const x = margin + col * colW;
-
-          if (col % cols === 0 && col > 0) {
-            doc.y += 18;
+          if (col === cols) {
+            col = 0;
+            rowY += 20;
           }
 
+          const x = margin + col * colW;
+
           doc.fontSize(9).fillColor("#000000").font("Helvetica")
-            .text(`${keyNum}.`, x, doc.y, { width: 20 });
+            .text(`${keyNum}.`, x, rowY, { width: 22, lineBreak: false });
           doc.fontSize(9).fillColor("#000000").font("Helvetica-Bold")
-            .text(q.answer.toUpperCase(), x + 20, doc.y, { width: colW - 22 });
+            .text(q.answer.toUpperCase(), x + 22, rowY, { width: colW - 24, lineBreak: false });
 
           keyNum++;
           col++;
         });
 
-        doc.y += 28;
+        doc.y = rowY + 32;
       }
     }
 
