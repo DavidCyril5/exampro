@@ -3,7 +3,7 @@ import { useAuth } from "@/context/AuthContext";
 import { motion } from "framer-motion";
 import {
   FileText, Download, Loader2, Plus, Trash2, Settings2,
-  BookOpen, CalendarDays, Clock, CheckSquare, Eye, EyeOff, Key
+  BookOpen, Clock, CheckSquare, Eye, Key
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,14 +41,11 @@ const JAMB_SUBJECTS = [
   "Civic Education",
 ];
 
-const YEARS = ["2024", "2023", "2022", "2021", "2020", "2019", "2018", "2017", "2016", "2015", "2014", "2013", "2012", "2011", "2010", "Mixed"];
-
 const QUESTION_COUNTS = [5, 10, 15, 20, 25, 30, 40, 50];
 
 interface SubjectEntry {
   id: string;
   subject: string;
-  year: string;
   count: number;
 }
 
@@ -63,13 +60,12 @@ export default function Dashboard() {
   const [title, setTitle] = useState("JAMB CBT Practice Examination");
   const [subtitle, setSubtitle] = useState("Unified Tertiary Matriculation Examination");
   const [schoolName, setSchoolName] = useState("");
-  const [examDate, setExamDate] = useState("");
   const [duration, setDuration] = useState("2 Hours");
   const [includeAnswers, setIncludeAnswers] = useState(false);
   const [includeAnswerKey, setIncludeAnswerKey] = useState(true);
   const [subjects, setSubjects] = useState<SubjectEntry[]>([
-    { id: generateId(), subject: "English", year: "2020", count: 10 },
-    { id: generateId(), subject: "Mathematics", year: "2020", count: 10 },
+    { id: generateId(), subject: "English", count: 10 },
+    { id: generateId(), subject: "Mathematics", count: 10 },
   ]);
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -78,7 +74,7 @@ export default function Dashboard() {
       toast({ title: "Maximum 4 subjects", description: "JAMB allows a maximum of 4 subjects.", variant: "destructive" });
       return;
     }
-    setSubjects((prev) => [...prev, { id: generateId(), subject: "Physics", year: "2020", count: 10 }]);
+    setSubjects((prev) => [...prev, { id: generateId(), subject: "Physics", count: 10 }]);
   };
 
   const removeSubject = (id: string) => {
@@ -114,16 +110,16 @@ export default function Dashboard() {
         title,
         subtitle,
         schoolName,
-        examDate,
+
         duration,
         subjects: subjects.map((s) => s.subject.toLowerCase()),
         questionsPerSubject: subjects[0]?.count || 10,
-        year: subjects[0]?.year === "Mixed" ? "" : subjects[0]?.year || "2020",
+        year: "",
         includeAnswers,
         includeAnswerKey,
         subjectDetails: subjects.map((s) => ({
           subject: s.subject.toLowerCase(),
-          year: s.year === "Mixed" ? "" : s.year,
+          year: "",
           count: s.count,
         })),
       };
@@ -221,31 +217,20 @@ export default function Dashboard() {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs font-medium">Subtitle / Exam Body</Label>
+                    <Label className="text-xs font-medium">JAMB REG NO</Label>
                     <Input
                       value={subtitle}
                       onChange={(e) => setSubtitle(e.target.value)}
-                      placeholder="Unified Tertiary Matriculation Examination"
+                      placeholder="Enter JAMB Registration Number"
                       className="h-10 bg-background/50 border-white/10 text-sm"
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs font-medium">School / Tutor Name</Label>
+                    <Label className="text-xs font-medium">Full Name</Label>
                     <Input
                       value={schoolName}
                       onChange={(e) => setSchoolName(e.target.value)}
-                      placeholder="e.g. Cheelee Academy"
-                      className="h-10 bg-background/50 border-white/10 text-sm"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-medium flex items-center gap-1.5">
-                      <CalendarDays className="w-3 h-3" /> Exam Date (optional)
-                    </Label>
-                    <Input
-                      value={examDate}
-                      onChange={(e) => setExamDate(e.target.value)}
-                      placeholder="e.g. March 15, 2026"
+                      placeholder="Enter full name"
                       className="h-10 bg-background/50 border-white/10 text-sm"
                     />
                   </div>
@@ -300,7 +285,7 @@ export default function Dashboard() {
                       <span className="text-xs font-bold text-primary/60">S{idx + 1}</span>
                     </div>
 
-                    <div className="col-span-5">
+                    <div className="col-span-7">
                       <Select value={entry.subject} onValueChange={(v) => updateSubject(entry.id, "subject", v)}>
                         <SelectTrigger className="h-9 text-xs bg-background/60 border-white/10">
                           <SelectValue />
@@ -314,19 +299,6 @@ export default function Dashboard() {
                     </div>
 
                     <div className="col-span-3">
-                      <Select value={entry.year} onValueChange={(v) => updateSubject(entry.id, "year", v)}>
-                        <SelectTrigger className="h-9 text-xs bg-background/60 border-white/10">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {YEARS.map((y) => (
-                            <SelectItem key={y} value={y} className="text-xs">{y}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="col-span-2">
                       <Select value={String(entry.count)} onValueChange={(v) => updateSubject(entry.id, "count", parseInt(v))}>
                         <SelectTrigger className="h-9 text-xs bg-background/60 border-white/10">
                           <SelectValue />
@@ -425,10 +397,7 @@ export default function Dashboard() {
                         </div>
                         <span className="font-medium">{s.subject}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <span>{s.year}</span>
-                        <span className="text-primary font-bold">{s.count}Q</span>
-                      </div>
+                      <span className="text-primary font-bold">{s.count}Q</span>
                     </div>
                   ))}
                 </div>
@@ -496,10 +465,6 @@ export default function Dashboard() {
                   <li className="flex items-start gap-2">
                     <span className="text-primary mt-0.5">•</span>
                     English Language is compulsory for most courses
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-primary mt-0.5">•</span>
-                    Use "Mixed" year to get varied questions across years
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-primary mt-0.5">•</span>
