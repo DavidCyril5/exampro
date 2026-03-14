@@ -85,9 +85,6 @@ export default function Login() {
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password" className="text-sm">Password</Label>
-                  <a href="#" className="text-xs md:text-sm font-medium text-primary hover:underline">
-                    Forgot password?
-                  </a>
                 </div>
                 <div className="relative">
                   <Lock className="absolute left-3 top-3 h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
@@ -122,10 +119,7 @@ export default function Login() {
             </form>
 
             <div className="mt-5 text-center text-xs md:text-sm text-muted-foreground">
-              Don't have an account?{" "}
-              <Link href="/register" className="font-medium text-primary hover:underline">
-                Create one now
-              </Link>
+              Admin access only. Contact your administrator for credentials.
             </div>
           </CardContent>
         </Card>

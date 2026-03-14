@@ -11,8 +11,7 @@ export function Navbar() {
   const [location] = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const isAuthPage = location === "/login" || location === "/register";
-
+  const isAuthPage = location === "/login";
   const closeMenu = () => setMenuOpen(false);
 
   return (
@@ -21,7 +20,6 @@ export function Navbar() {
         <div className="container mx-auto px-4 h-16 md:h-20 flex items-center justify-between">
           <BrandLogo className="text-lg md:text-xl" />
 
-          {/* Desktop nav */}
           <div className="hidden md:flex items-center gap-4">
             {!isLoading && (
               <>
@@ -42,23 +40,17 @@ export function Navbar() {
                   </>
                 ) : (
                   !isAuthPage && (
-                    <>
-                      <Link href="/login" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                        Sign In
-                      </Link>
-                      <Link href="/register">
-                        <Button className="font-semibold shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all rounded-full px-6">
-                          Get Started
-                        </Button>
-                      </Link>
-                    </>
+                    <Link href="/login">
+                      <Button className="font-semibold shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all rounded-full px-6">
+                        Admin Login
+                      </Button>
+                    </Link>
                   )
                 )}
               </>
             )}
           </div>
 
-          {/* Mobile hamburger */}
           {!isLoading && !isAuthPage && (
             <button
               className="md:hidden flex items-center justify-center w-10 h-10 rounded-lg border border-white/10 bg-white/5 text-foreground transition-colors hover:bg-white/10"
@@ -71,7 +63,6 @@ export function Navbar() {
         </div>
       </nav>
 
-      {/* Mobile dropdown menu */}
       <AnimatePresence>
         {menuOpen && (
           <motion.div
@@ -108,18 +99,11 @@ export function Navbar() {
                   </button>
                 </>
               ) : (
-                <>
-                  <Link href="/login" onClick={closeMenu}>
-                    <button className="w-full px-4 py-3 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors text-left">
-                      Sign In
-                    </button>
-                  </Link>
-                  <Link href="/register" onClick={closeMenu}>
-                    <Button className="w-full rounded-xl font-semibold shadow-lg shadow-primary/20 h-11">
-                      Get Started — It's Free
-                    </Button>
-                  </Link>
-                </>
+                <Link href="/login" onClick={closeMenu}>
+                  <Button className="w-full rounded-xl font-semibold shadow-lg shadow-primary/20 h-11">
+                    Admin Login
+                  </Button>
+                </Link>
               )}
             </div>
           </motion.div>

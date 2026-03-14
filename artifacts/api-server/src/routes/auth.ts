@@ -1,18 +1,13 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { createHash, randomBytes } from "crypto";
-import { getDb } from "../lib/mongodb";
-import { RegisterBody, LoginBody } from "@workspace/api-zod";
+import { randomBytes } from "crypto";
 
 const router: IRouter = Router();
 
-function hashPassword(password: string): string {
-  const salt = process.env.PASSWORD_SALT || "exampro_salt_2024";
-  return createHash("sha256").update(password + salt).digest("hex");
-}
+const ADMIN_EMAIL = "infocheelee01@gmail.com";
+const ADMIN_PASSWORD = "admin123";
+const ADMIN_NAME = "Admin";
 
-function generateToken(): string {
-  return randomBytes(32).toString("hex");
-}
+const sessions = new Map<string, { expiresAt: Date }>();
 
 function getTokenFromRequest(req: Request): string | null {
   const authHeader = req.headers.authorization;
@@ -20,76 +15,22 @@ function getTokenFromRequest(req: Request): string | null {
   return req.cookies?.auth_token || null;
 }
 
-router.post("/register", async (req: Request, res: Response) => {
-  const parsed = RegisterBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: "validation_error", message: parsed.error.issues[0]?.message || "Invalid request" });
-    return;
-  }
-
-  const { fullName, email, password, confirmPassword } = parsed.data;
-
-  if (password !== confirmPassword) {
-    res.status(400).json({ error: "password_mismatch", message: "Passwords do not match" });
-    return;
-  }
-
-  const db = await getDb();
-  const users = db.collection("users");
-
-  const existing = await users.findOne({ email: email.toLowerCase() });
-  if (existing) {
-    res.status(409).json({ error: "email_taken", message: "An account with this email already exists" });
-    return;
-  }
-
-  const now = new Date();
-  const result = await users.insertOne({
-    fullName,
-    email: email.toLowerCase(),
-    passwordHash: hashPassword(password),
-    createdAt: now,
-  });
-
-  res.status(201).json({
-    user: {
-      id: result.insertedId.toString(),
-      fullName,
-      email: email.toLowerCase(),
-      createdAt: now,
-    },
-    message: "Account created successfully",
-  });
-});
-
 router.post("/login", async (req: Request, res: Response) => {
-  const parsed = LoginBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: "validation_error", message: parsed.error.issues[0]?.message || "Invalid request" });
+  const { email, password } = req.body || {};
+
+  if (!email || !password) {
+    res.status(400).json({ error: "validation_error", message: "Email and password are required" });
     return;
   }
 
-  const { email, password } = parsed.data;
-
-  const db = await getDb();
-  const users = db.collection("users");
-
-  const user = await users.findOne({ email: email.toLowerCase() });
-  if (!user || user.passwordHash !== hashPassword(password)) {
+  if (email.toLowerCase().trim() !== ADMIN_EMAIL || password !== ADMIN_PASSWORD) {
     res.status(401).json({ error: "invalid_credentials", message: "Invalid email or password" });
     return;
   }
 
-  const token = generateToken();
+  const token = randomBytes(32).toString("hex");
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-
-  const sessions = db.collection("sessions");
-  await sessions.insertOne({
-    userId: user._id,
-    token,
-    createdAt: new Date(),
-    expiresAt,
-  });
+  sessions.set(token, { expiresAt });
 
   res.cookie("auth_token", token, {
     httpOnly: true,
@@ -100,10 +41,9 @@ router.post("/login", async (req: Request, res: Response) => {
 
   res.json({
     user: {
-      id: user._id.toString(),
-      fullName: user.fullName,
-      email: user.email,
-      createdAt: user.createdAt,
+      id: "admin",
+      fullName: ADMIN_NAME,
+      email: ADMIN_EMAIL,
     },
     message: "Login successful",
   });
@@ -111,10 +51,7 @@ router.post("/login", async (req: Request, res: Response) => {
 
 router.post("/logout", async (req: Request, res: Response) => {
   const token = getTokenFromRequest(req);
-  if (token) {
-    const db = await getDb();
-    await db.collection("sessions").deleteOne({ token });
-  }
+  if (token) sessions.delete(token);
   res.clearCookie("auth_token");
   res.json({ message: "Logged out successfully" });
 });
@@ -126,26 +63,18 @@ router.get("/me", async (req: Request, res: Response) => {
     return;
   }
 
-  const db = await getDb();
-  const session = await db.collection("sessions").findOne({ token });
-
+  const session = sessions.get(token);
   if (!session || session.expiresAt < new Date()) {
+    if (token) sessions.delete(token);
     res.clearCookie("auth_token");
     res.status(401).json({ error: "unauthorized", message: "Session expired" });
     return;
   }
 
-  const user = await db.collection("users").findOne({ _id: session.userId });
-  if (!user) {
-    res.status(401).json({ error: "unauthorized", message: "User not found" });
-    return;
-  }
-
   res.json({
-    id: user._id.toString(),
-    fullName: user.fullName,
-    email: user.email,
-    createdAt: user.createdAt,
+    id: "admin",
+    fullName: ADMIN_NAME,
+    email: ADMIN_EMAIL,
   });
 });
 

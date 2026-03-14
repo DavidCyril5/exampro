@@ -36,28 +36,44 @@ artifacts-monorepo/
 └── package.json            # Root package with hoisted devDeps
 ```
 
-## Project: EXAMPRO X EXAMCORE
+## Project: EXAMPRO X EXAMCORE — Admin PDF Generator
 
-An exam platform with the following features:
+JAMB past question PDF generator for admin use. Single admin account only.
+
+### Admin Credentials
+- Email: `infocheelee01@gmail.com`
+- Password: `admin123`
 
 ### Frontend (artifacts/exampro)
-- **Home page** (`/`) — Hero landing page with brand name and CTAs
-- **Register page** (`/register`) — User registration with validation
-- **Login page** (`/login`) — Secure login form
-- **Dashboard page** (`/dashboard`) — Protected authenticated user dashboard
-- Auth context with session persistence via cookies
+- **Login page** (`/`) — Admin-only login, redirects to dashboard
+- **Dashboard page** (`/dashboard`) — PDF generation form with:
+  - Paper title, subtitle, school name, exam date, duration fields
+  - Up to 4 JAMB subjects (English, Mathematics, Physics, etc.)
+  - Per-subject year selection (2010–2024 or Mixed) and question count
+  - Toggle: show answers inline OR include answer key page
+  - Download button triggers backend PDF generation
 - Dark navy professional theme with electric blue accents
+- No registration — admin only
 
 ### Backend (artifacts/api-server)
-- `POST /api/auth/register` — Register new user (hashed passwords)
-- `POST /api/auth/login` — Login, creates session token in cookie
-- `POST /api/auth/logout` — Clears session
-- `GET /api/auth/me` — Returns current authenticated user
-- Session-based auth using `sessions` table
+- `POST /api/auth/login` — Hardcoded admin check (no DB)
+- `POST /api/auth/logout` — Clears in-memory session
+- `GET /api/auth/me` — Returns admin user from session
+- `POST /api/pdf/generate` — Fetches questions from ALOC API, generates professional PDF
 
-### Database Schema (lib/db/src/schema)
-- `users` table — id, full_name, email, password_hash, created_at
-- `sessions` table — id, user_id, token, created_at, expires_at (7 day TTL)
+### ALOC Questions API
+- Token: stored in `ALOC_TOKEN` env var (`QB-a426946c75c1e80cb2ef`)
+- Base URL: `https://questions.aloc.com.ng/api/v2`
+- Endpoint: `GET /q?subject=<subject>&year=<year>&type=utme`
+- Header: `AccessToken: <token>`
+
+### PDF Features
+- Professional dark-themed header with EXAMCORE branding
+- Per-subject section banners
+- Numbered questions with A–D options
+- Optional: highlight correct answers inline
+- Optional: answer key page at end
+- Generated using PDFKit (`pdfkit` package)
 
 ## TypeScript & Composite Projects
 
