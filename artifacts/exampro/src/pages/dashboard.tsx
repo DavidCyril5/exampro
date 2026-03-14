@@ -41,7 +41,7 @@ const JAMB_SUBJECTS = [
   "Civic Education",
 ];
 
-const QUESTION_COUNTS = [5, 10, 15, 20, 25, 30, 40, 50];
+const QUESTION_COUNTS = [5, 10, 15, 20, 25, 30, 40, 50, 60];
 
 interface SubjectEntry {
   id: string;
@@ -64,8 +64,8 @@ export default function Dashboard() {
   const [includeAnswers, setIncludeAnswers] = useState(false);
   const [includeAnswerKey, setIncludeAnswerKey] = useState(true);
   const [subjects, setSubjects] = useState<SubjectEntry[]>([
-    { id: generateId(), subject: "English", count: 10 },
-    { id: generateId(), subject: "Mathematics", count: 10 },
+    { id: generateId(), subject: "English", count: 60 },
+    { id: generateId(), subject: "Mathematics", count: 40 },
   ]);
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -74,7 +74,7 @@ export default function Dashboard() {
       toast({ title: "Maximum 4 subjects", description: "JAMB allows a maximum of 4 subjects.", variant: "destructive" });
       return;
     }
-    setSubjects((prev) => [...prev, { id: generateId(), subject: "Physics", count: 10 }]);
+    setSubjects((prev) => [...prev, { id: generateId(), subject: "Physics", count: 40 }]);
   };
 
   const removeSubject = (id: string) => {
