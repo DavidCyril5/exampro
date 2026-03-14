@@ -259,19 +259,7 @@ router.post("/generate", async (req: Request, res: Response) => {
 
     const chunks: Buffer[] = [];
     doc.on("data", (chunk: Buffer) => chunks.push(chunk));
-
     doc.on("end", () => {
-      const range = doc.bufferedPageRange();
-      const totalPages = range.count;
-
-      for (let i = 0; i < range.count; i++) {
-        doc.switchToPage(i);
-        drawPageHeader(doc, title || "JAMB CBT Practice Paper", subtitle || "", duration || "", schoolName || "");
-        drawPageFooter(doc, i + 1, totalPages, schoolName || "");
-      }
-
-      doc.flushPages();
-
       const pdfBuffer = Buffer.concat(chunks);
       res.setHeader("Content-Type", "application/pdf");
       res.setHeader("Content-Disposition", `attachment; filename="examcore-practice-paper.pdf"`);
@@ -279,8 +267,8 @@ router.post("/generate", async (req: Request, res: Response) => {
       res.send(pdfBuffer);
     });
 
+    // — Draw all question content —
     let globalNum = 1;
-
     for (const { subject, year, questions } of questionSets) {
       drawSectionBanner(doc, subject, year, questions.length);
       for (const q of questions) {
@@ -288,6 +276,7 @@ router.post("/generate", async (req: Request, res: Response) => {
       }
     }
 
+    // — Answer key page —
     if (includeAnswerKey && !includeAnswers && questionSets.some((s) => s.questions.length > 0)) {
       doc.addPage();
       doc.y = 158;
@@ -318,18 +307,12 @@ router.post("/generate", async (req: Request, res: Response) => {
         let rowY = doc.y;
 
         questions.forEach((q) => {
-          if (col === cols) {
-            col = 0;
-            rowY += 20;
-          }
-
+          if (col === cols) { col = 0; rowY += 20; }
           const x = margin + col * colW;
-
           doc.fontSize(9).fillColor("#000000").font("Helvetica")
             .text(`${keyNum}.`, x, rowY, { width: 22, lineBreak: false });
           doc.fontSize(9).fillColor("#000000").font("Helvetica-Bold")
             .text(q.answer.toUpperCase(), x + 22, rowY, { width: colW - 24, lineBreak: false });
-
           keyNum++;
           col++;
         });
@@ -338,6 +321,16 @@ router.post("/generate", async (req: Request, res: Response) => {
       }
     }
 
+    // — Stamp header + footer on every page now that we know total count —
+    const range = doc.bufferedPageRange();
+    const totalPages = range.count;
+    for (let i = 0; i < totalPages; i++) {
+      doc.switchToPage(i);
+      drawPageHeader(doc, title || "JAMB CBT Practice Paper", subtitle || "", duration || "", schoolName || "");
+      drawPageFooter(doc, i + 1, totalPages, schoolName || "");
+    }
+
+    doc.flushPages();
     doc.end();
   } catch (err: any) {
     console.error("PDF generation error:", err);
