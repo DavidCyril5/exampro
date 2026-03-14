@@ -321,12 +321,14 @@ router.post("/generate", async (req: Request, res: Response) => {
       }
     }
 
-    // — Stamp header + footer on every page now that we know total count —
+    // — Stamp header on page 1 only; footer on every page —
     const range = doc.bufferedPageRange();
     const totalPages = range.count;
     for (let i = 0; i < totalPages; i++) {
       doc.switchToPage(i);
-      drawPageHeader(doc, title || "JAMB CBT Practice Paper", subtitle || "", duration || "", schoolName || "");
+      if (i === 0) {
+        drawPageHeader(doc, title || "JAMB CBT Practice Paper", subtitle || "", duration || "", schoolName || "");
+      }
       drawPageFooter(doc, i + 1, totalPages, schoolName || "");
     }
 
