@@ -6,6 +6,7 @@ import NotFound from "@/pages/not-found";
 
 import { AuthProvider } from "@/context/AuthContext";
 import { Navbar } from "@/components/Navbar";
+import { Footer } from "@/components/Footer";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 import Home from "@/pages/home";
@@ -19,7 +20,7 @@ function Router() {
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground selection:bg-primary/30">
       <Navbar />
-      <main className="flex-1">
+      <main className="flex-1 flex flex-col">
         <Switch>
           <Route path="/" component={Home} />
           <Route path="/login" component={Login} />
@@ -36,6 +37,7 @@ function Router() {
           <Route component={NotFound} />
         </Switch>
       </main>
+      <Footer />
     </div>
   );
 }

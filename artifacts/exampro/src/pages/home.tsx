@@ -19,7 +19,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] md:min-h-[calc(100vh-5rem)] flex flex-col relative overflow-hidden">
+    <div className="flex-1 flex flex-col relative overflow-hidden">
       {/* Background Graphic */}
       <div className="absolute inset-0 z-0 opacity-40 mix-blend-screen pointer-events-none">
         <img

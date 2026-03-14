@@ -18,7 +18,7 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] md:min-h-[calc(100vh-5rem)] bg-background px-4 py-6 md:p-8">
+    <div className="flex-1 bg-background px-4 py-6 md:p-8">
       <div className="max-w-6xl mx-auto space-y-6 md:space-y-8">
 
         {/* Header */}
