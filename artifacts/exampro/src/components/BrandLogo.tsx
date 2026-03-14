@@ -8,15 +8,11 @@ interface BrandLogoProps {
 export function BrandLogo({ className = "", withLink = true }: BrandLogoProps) {
   const content = (
     <div className={`flex items-center tracking-tight ${className}`}>
-      <span className="font-display font-bold text-foreground">
-        EXAMPRO
-      </span>
-      <span className="text-primary text-xl mx-1.5 font-black italic shadow-primary drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]">
+      <span className="font-display font-bold text-foreground">EXAMPRO</span>
+      <span className="text-primary mx-[0.15em] font-black italic text-[0.75em] drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]">
         X
       </span>
-      <span className="font-display font-bold text-foreground">
-        EXAMCORE
-      </span>
+      <span className="font-display font-bold text-foreground">EXAMCORE</span>
     </div>
   );
 
