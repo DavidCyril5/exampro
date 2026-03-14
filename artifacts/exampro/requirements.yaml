@@ -1,0 +1,14 @@
+packages:
+  "framer-motion": "For premium page transitions and scroll-triggered animations"
+  "react-hook-form": "For robust form state management"
+  "@hookform/resolvers": "For Zod validation integration with forms"
+  "zod": "For frontend form validation schemas"
+
+images:
+  - path: "artifacts/exampro/public/images/hero-bg.png"
+    description: "Abstract dark navy and electric blue gradient mesh with subtle geometric lines, premium modern tech platform feel"
+    aspect_ratio: "16:9"
+
+notes:
+  - "Assuming customFetch in generated client handles base URLs and credentials automatically"
+  - "App uses a custom AuthContext to bridge generated TanStack Query hooks with wouter routing"
