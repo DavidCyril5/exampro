@@ -10,12 +10,12 @@ services:
       - key: PORT
         value: 10000
       - key: SESSION_SECRET
-        sync: false
+        sync: true
       - key: ALOC_TOKEN
-        sync: false
+        sync: true
       - key: RESEND_API_KEY
-        sync: false
+        sync: true
       - key: ADMIN_EMAIL
-        sync: false
+        sync: true
       - key: RESEND_FROM
-        sync: false
+        sync: true

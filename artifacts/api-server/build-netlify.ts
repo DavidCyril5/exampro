@@ -12,6 +12,12 @@ await esbuild({
   bundle: true,
   format: "cjs",
   outfile: path.resolve(__dirname, "../../netlify/functions/api.js"),
+  define: {
+    "import.meta.url": "__import_meta_url__",
+  },
+  banner: {
+    js: `const __import_meta_url__ = require('url').pathToFileURL(__filename).href;`,
+  },
   logLevel: "info",
 });
 
