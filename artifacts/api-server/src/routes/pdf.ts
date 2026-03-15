@@ -4,7 +4,16 @@ import axios from "axios";
 
 const router: IRouter = Router();
 
-const ALOC_TOKEN = process.env.ALOC_TOKEN || "QB-a426946c75c1e80cb2ef";
+const ALOC_TOKENS = [
+  "QB-a426946c75c1e80cb2ef",
+  "49d828d7860d4fe4a4bc",
+  "10c7a23ffb79a58ba518",
+  "20fb18ea4b4a8b4d6cdf",
+  "f860074d17d703f22857",
+];
+function randomToken(): string {
+  return ALOC_TOKENS[Math.floor(Math.random() * ALOC_TOKENS.length)];
+}
 const ALOC_BASE = "https://questions.aloc.com.ng/api/v2";
 
 interface AlocQuestion {
@@ -36,7 +45,7 @@ async function fetchQuestions(subject: string, _year: string, count: number): Pr
     const year = randomYear();
     const url = `${ALOC_BASE}/q?subject=${encodeURIComponent(subject)}&type=utme&year=${year}`;
     try {
-      const res = await axios.get(url, { headers: { AccessToken: ALOC_TOKEN }, timeout: 8000 });
+      const res = await axios.get(url, { headers: { AccessToken: randomToken() }, timeout: 8000 });
       if (res.data?.status === 200 && res.data?.data) {
         const q = Array.isArray(res.data.data) ? res.data.data[0] : res.data.data;
         if (q && !seenIds.has(q.id)) {
