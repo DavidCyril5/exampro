@@ -1,0 +1,35 @@
+modules = ["nodejs-24"]
+
+[[artifacts]]
+id = "artifacts/api-server"
+
+[[artifacts]]
+id = "artifacts/mockup-sandbox"
+
+[deployment]
+router = "application"
+deploymentTarget = "autoscale"
+
+[deployment.postBuild]
+args = ["pnpm", "store", "prune"]
+env = { "CI" = "true" }
+
+[workflows]
+runButton = "Project"
+
+[agent]
+stack = "PNPM_WORKSPACE"
+expertMode = true
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 20000
+
+[userenv]
+
+[userenv.shared]
+MONGODB_URI = "mongodb+srv://davidcyril209:85200555dcx@david.sfonwmo.mongodb.net/?retryWrites=true&w=majority&appName=David"
+ALOC_TOKEN = "QB-a426946c75c1e80cb2ef,ALOC-49d828d7860d4fe4a4bc,ALOC-10c7a23ffb79a58ba518,ALOC-20fb18ea4b4a8b4d6cdf,ALOC-f860074d17d703f22857"
+RESEND_API_KEY = "re_JyUyveie_J5uQTLeH4NhvmUAhYbddjm4q"
+ADMIN_EMAIL = "infocheelee01@gmail.com"
+RESEND_FROM = "ExamPro <noreply@jamb.anita.name.ng>"

@@ -1,0 +1,45 @@
+==> Common ways to troubleshoot your deploy: https://render.com/docs/troubleshooting-deploys
+Menu
+==> Exited with status 1
+Node.js v22.22.0
+}
+  code: 'ERR_INVALID_ARG_TYPE'
+    at node:internal/main/run_main_module:36:49 {
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at Function._load (node:internal/modules/cjs/loader:1263:12)
+    at Module.load (node:internal/modules/cjs/loader:1441:32)
+    at Object..js (node:internal/modules/cjs/loader:1839:10)
+    at Module._compile (node:internal/modules/cjs/loader:1706:14)
+    at Object.<anonymous> (/opt/render/project/src/artifacts/api-server/dist/index.cjs:58:5582)
+    at fileURLToPath (node:internal/url:1610:11)
+TypeError [ERR_INVALID_ARG_TYPE]: The "path" argument must be of type string or an instance of URL. Received undefined
+    ^
+    throw new ERR_INVALID_ARG_TYPE('path', ['string', 'URL'], path);
+node:internal/url:1610
+==> Running 'node artifacts/api-server/dist/index.cjs'
+==> Setting WEB_CONCURRENCY=1 by default, based on available CPUs in the instance
+==> Deploying...
+==> Build successful 🎉
+==> Uploaded in 7.0s. Compression took 6.5s
+==> Uploading build...
+⚡ Done in 140ms
+  dist/index.cjs  1.0mb ⚠️
+1 warning
+  You need to set the output format to "esm" for "import.meta" to work correctly.
+        ╵                                  ~~~~~~~~~~~
+      7 │ const __filename = fileURLToPath(import.meta.url);
+    src/routes/pdf.ts:7:33:
+▲ [WARNING] "import.meta" is not available with the "cjs" output format and will be empty [empty-import-meta]
+building server...
+> tsx ./build.ts
+> @workspace/api-server@0.0.0 build /opt/render/project/src/artifacts/api-server
+  run `npm fund` for details
+1 package is looking for funding
+added 1 package in 1s
+==> Running build command 'npm install -g pnpm && pnpm install && pnpm --filter @workspace/api-server run build'...
+==> Docs on specifying a Node.js version: https://render.com/docs/node-version
+==> Using Node.js version 22.22.0 (default)
+==> Checking out commit f9b10a249562ef14f3894cfbd44fe887ccc9750c in branch main
+==> Cloning from https://github.com/DavidCyril5/exampro

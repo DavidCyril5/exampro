@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "EXAMPRO X EXAMCORE"
+version = "1.0.0"
+id = "artifacts/exampro"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+localPort = 22710
+name = "web"
+paths = ["/"]
+
+[services.development]
+run = "pnpm --filter @workspace/exampro run dev"
+
+[services.env]
+PORT = "22710"
+BASE_PATH = "/"
+
+[services.production]
+build = ["pnpm", "--filter", "@workspace/exampro", "run", "build"]
+publicDir = "artifacts/exampro/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
