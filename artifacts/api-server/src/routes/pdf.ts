@@ -265,88 +265,114 @@ router.post("/generate", async (req: Request, res: Response) => {
       questionSets.push({ subject: detail.subject, year: detail.year || "Mixed", questions: qs });
     }
 
-    const doc = new PDFDocument({
-      size: "A4",
-      margins: { top: 158, bottom: 46, left: 42, right: 42 },
-      bufferPages: true,
-      info: {
-        Title: title || "ExamCore Practice Paper",
-        Author: "ExamCore Platform",
-        Subject: "JAMB Past Questions",
-      },
+    // — Build PDF buffer —
+    const pdfBuffer = await new Promise<Buffer>((resolve, reject) => {
+      const doc = new PDFDocument({
+        size: "A4",
+        margins: { top: 158, bottom: 46, left: 42, right: 42 },
+        bufferPages: true,
+        info: {
+          Title: title || "ExamCore Practice Paper",
+          Author: "ExamCore Platform",
+          Subject: "JAMB Past Questions",
+        },
+      });
+
+      const chunks: Buffer[] = [];
+      doc.on("data", (chunk: Buffer) => chunks.push(chunk));
+      doc.on("end", () => resolve(Buffer.concat(chunks)));
+      doc.on("error", reject);
+
+      // — Draw all question content —
+      for (const { subject, year, questions } of questionSets) {
+        drawSectionBanner(doc, subject, year, questions.length);
+        let qNum = 1;
+        for (const q of questions) {
+          drawQuestion(doc, q, qNum++, includeAnswers === true);
+        }
+      }
+
+      // — Answer key page —
+      if (includeAnswerKey && !includeAnswers && questionSets.some((s) => s.questions.length > 0)) {
+        doc.addPage();
+        doc.y = 158;
+
+        const W = doc.page.width;
+        const margin = 42;
+        const contentW = W - margin * 2;
+
+        const bannerY = doc.y;
+        doc.rect(margin, bannerY, contentW, 30).fill("#f0f0f0").stroke("#000000");
+        doc.fontSize(14).fillColor("#000000").font("Helvetica-Bold")
+          .text("ANSWER KEY", margin + 10, bannerY + 8, { width: contentW - 20, lineBreak: false });
+        doc.y = bannerY + 44;
+
+        const cols = 6;
+        const colW = contentW / cols;
+
+        for (const { subject, questions } of questionSets) {
+          if (questions.length === 0) continue;
+
+          const subjectY = doc.y;
+          doc.fontSize(10).fillColor("#000000").font("Helvetica-Bold")
+            .text(subject.toUpperCase(), margin, subjectY, { lineBreak: false });
+          doc.y = subjectY + 18;
+
+          let col = 0;
+          let rowY = doc.y;
+          let keyNum = 1;
+
+          questions.forEach((q) => {
+            if (col === cols) { col = 0; rowY += 20; }
+            const x = margin + col * colW;
+            doc.fontSize(9).fillColor("#000000").font("Helvetica")
+              .text(`${keyNum}.`, x, rowY, { width: 22, lineBreak: false });
+            doc.fontSize(9).fillColor("#000000").font("Helvetica-Bold")
+              .text(q.answer.toUpperCase(), x + 22, rowY, { width: colW - 24, lineBreak: false });
+            keyNum++;
+            col++;
+          });
+
+          doc.y = rowY + 32;
+        }
+      }
+
+      // — Stamp header on page 1 only —
+      doc.bufferedPageRange();
+      doc.switchToPage(0);
+      drawPageHeader(doc, title || "JAMB CBT Practice Paper", subtitle || "", duration || "", schoolName || "");
+
+      doc.flushPages();
+      doc.end();
     });
 
-    const chunks: Buffer[] = [];
-    doc.on("data", (chunk: Buffer) => chunks.push(chunk));
-    doc.on("end", () => {
-      const pdfBuffer = Buffer.concat(chunks);
-      res.setHeader("Content-Type", "application/pdf");
-      res.setHeader("Content-Disposition", `attachment; filename="examcore-practice-paper.pdf"`);
-      res.setHeader("Content-Length", pdfBuffer.length);
-      res.send(pdfBuffer);
+    // — Upload to CDN —
+    const filename = `examcore-${Date.now()}.pdf`;
+    const formData = new FormData();
+    formData.append("file", new Blob([pdfBuffer], { type: "application/pdf" }), filename);
+    formData.append("filename", filename);
+
+    const uploadRes = await fetch("https://rynekoo-api.hf.space/tools/uploader/alibaba", {
+      method: "POST",
+      body: formData,
+      signal: AbortSignal.timeout(60000),
     });
 
-    // — Draw all question content —
-    for (const { subject, year, questions } of questionSets) {
-      drawSectionBanner(doc, subject, year, questions.length);
-      let qNum = 1;
-      for (const q of questions) {
-        drawQuestion(doc, q, qNum++, includeAnswers === true);
-      }
-    }
+    if (!uploadRes.ok) throw new Error("CDN upload failed");
+    const uploadData = await uploadRes.json() as any;
+    if (!uploadData.success || !uploadData.result) throw new Error("CDN upload failed: no URL returned");
 
-    // — Answer key page —
-    if (includeAnswerKey && !includeAnswers && questionSets.some((s) => s.questions.length > 0)) {
-      doc.addPage();
-      doc.y = 158;
+    const totalQuestions = questionSets.reduce((sum, s) => sum + s.questions.length, 0);
+    res.json({
+      success: true,
+      url: uploadData.result,
+      filename,
+      title: title || "JAMB CBT Practice Paper",
+      subjects: questionSets.map((s) => ({ subject: s.subject, count: s.questions.length })),
+      totalQuestions,
+      generatedAt: new Date().toISOString(),
+    });
 
-      const W = doc.page.width;
-      const margin = 42;
-      const contentW = W - margin * 2;
-
-      const bannerY = doc.y;
-      doc.rect(margin, bannerY, contentW, 30).fill("#f0f0f0").stroke("#000000");
-      doc.fontSize(14).fillColor("#000000").font("Helvetica-Bold")
-        .text("ANSWER KEY", margin + 10, bannerY + 8, { width: contentW - 20, lineBreak: false });
-      doc.y = bannerY + 44;
-
-      const cols = 6;
-      const colW = contentW / cols;
-
-      for (const { subject, questions } of questionSets) {
-        if (questions.length === 0) continue;
-
-        const subjectY = doc.y;
-        doc.fontSize(10).fillColor("#000000").font("Helvetica-Bold")
-          .text(subject.toUpperCase(), margin, subjectY, { lineBreak: false });
-        doc.y = subjectY + 18;
-
-        let col = 0;
-        let rowY = doc.y;
-        let keyNum = 1;
-
-        questions.forEach((q) => {
-          if (col === cols) { col = 0; rowY += 20; }
-          const x = margin + col * colW;
-          doc.fontSize(9).fillColor("#000000").font("Helvetica")
-            .text(`${keyNum}.`, x, rowY, { width: 22, lineBreak: false });
-          doc.fontSize(9).fillColor("#000000").font("Helvetica-Bold")
-            .text(q.answer.toUpperCase(), x + 22, rowY, { width: colW - 24, lineBreak: false });
-          keyNum++;
-          col++;
-        });
-
-        doc.y = rowY + 32;
-      }
-    }
-
-    // — Stamp header on page 1 only —
-    doc.bufferedPageRange();
-    doc.switchToPage(0);
-    drawPageHeader(doc, title || "JAMB CBT Practice Paper", subtitle || "", duration || "", schoolName || "");
-
-    doc.flushPages();
-    doc.end();
   } catch (err: any) {
     console.error("PDF generation error:", err);
     res.status(500).json({ error: "Failed to generate PDF", message: err.message });

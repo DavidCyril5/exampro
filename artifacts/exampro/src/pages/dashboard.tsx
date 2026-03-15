@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { motion } from "framer-motion";
 import {
   FileText, Download, Loader2, Plus, Trash2, Settings2,
-  BookOpen, Clock, CheckSquare, Eye, Key
+  BookOpen, Clock, CheckSquare, Eye, Key, History, ExternalLink
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,6 +49,18 @@ interface SubjectEntry {
   count: number;
 }
 
+interface HistoryItem {
+  id: string;
+  title: string;
+  subjects: { subject: string; count: number }[];
+  url: string;
+  filename: string;
+  totalQuestions: number;
+  generatedAt: string;
+}
+
+const HISTORY_KEY = "examcore-history";
+
 function generateId() {
   return Math.random().toString(36).slice(2);
 }
@@ -68,6 +80,20 @@ export default function Dashboard() {
     { id: generateId(), subject: "Mathematics", count: 40 },
   ]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [lastResult, setLastResult] = useState<HistoryItem | null>(null);
+  const [history, setHistory] = useState<HistoryItem[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+    } catch {}
+  }, [history]);
 
   const addSubject = () => {
     if (subjects.length >= 4) {
@@ -103,6 +129,7 @@ export default function Dashboard() {
     }
 
     setIsGenerating(true);
+    setLastResult(null);
     toast({ title: "Generating PDF...", description: "Fetching questions from JAMB database. Please wait..." });
 
     try {
@@ -110,7 +137,6 @@ export default function Dashboard() {
         title,
         subtitle,
         schoolName,
-
         duration,
         subjects: subjects.map((s) => s.subject.toLowerCase()),
         questionsPerSubject: subjects[0]?.count || 10,
@@ -136,17 +162,20 @@ export default function Dashboard() {
         throw new Error(err.message || "Failed to generate PDF");
       }
 
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `examcore-${title.replace(/\s+/g, "-").toLowerCase()}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
+      const data = await res.json();
+      const item: HistoryItem = {
+        id: Date.now().toString(),
+        title: data.title || title,
+        subjects: data.subjects || subjects.map((s) => ({ subject: s.subject, count: s.count })),
+        url: data.url,
+        filename: data.filename,
+        totalQuestions: data.totalQuestions || totalQuestions,
+        generatedAt: data.generatedAt || new Date().toISOString(),
+      };
 
-      toast({ title: "PDF Downloaded!", description: `${totalQuestions} questions generated successfully.` });
+      setLastResult(item);
+      setHistory((prev) => [item, ...prev].slice(0, 50));
+      toast({ title: "PDF Ready!", description: `${item.totalQuestions} questions generated. Click the download button below.` });
     } catch (err: any) {
       toast({ title: "Generation Failed", description: err.message || "Something went wrong.", variant: "destructive" });
     } finally {
@@ -439,16 +468,39 @@ export default function Dashboard() {
                     </>
                   ) : (
                     <>
-                      <Download className="w-4 h-4 mr-2" />
-                      Generate & Download PDF
+                      <FileText className="w-4 h-4 mr-2" />
+                      Generate PDF
                     </>
                   )}
                 </Button>
 
                 {isGenerating && (
                   <p className="text-center text-xs text-muted-foreground">
-                    Fetching {totalQuestions} questions from JAMB database...
+                    Fetching {totalQuestions} questions &amp; uploading to CDN...
                   </p>
+                )}
+
+                {lastResult && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 space-y-2"
+                  >
+                    <p className="text-xs font-semibold text-emerald-400 flex items-center gap-1.5">
+                      <CheckSquare className="w-3.5 h-3.5" />
+                      PDF Ready — {lastResult.totalQuestions} questions
+                    </p>
+                    <a
+                      href={lastResult.url}
+                      download={lastResult.filename}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2 w-full h-10 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-sm transition-colors"
+                    >
+                      <Download className="w-4 h-4" />
+                      Download PDF
+                    </a>
+                  </motion.div>
                 )}
               </CardContent>
             </Card>
@@ -475,6 +527,71 @@ export default function Dashboard() {
             </Card>
           </motion.div>
         </div>
+
+        {/* History Section */}
+        {history.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.1 }}
+          >
+            <Card className="border-white/10 bg-card/60 backdrop-blur-sm">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <History className="w-4 h-4 text-primary" />
+                    Download History
+                  </CardTitle>
+                  <button
+                    onClick={() => {
+                      setHistory([]);
+                      localStorage.removeItem(HISTORY_KEY);
+                    }}
+                    className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+                  >
+                    Clear all
+                  </button>
+                </div>
+                <CardDescription className="text-xs">Previously generated PDFs — click to re-download</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {history.map((item, idx) => (
+                  <motion.div
+                    key={item.id}
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: idx * 0.04 }}
+                    className="flex items-center gap-3 p-3 rounded-xl bg-background/40 border border-white/5 hover:border-white/15 transition-colors group"
+                  >
+                    <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <FileText className="w-4 h-4 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{item.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {item.subjects.map((s) => `${s.subject} (${s.count}Q)`).join(" · ")}
+                      </p>
+                      <p className="text-xs text-muted-foreground/60 mt-0.5">
+                        {new Date(item.generatedAt).toLocaleString()} · {item.totalQuestions} questions
+                      </p>
+                    </div>
+                    <a
+                      href={item.url}
+                      download={item.filename}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 px-3 h-8 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold transition-colors flex-shrink-0"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      Download
+                    </a>
+                  </motion.div>
+                ))}
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
       </div>
     </div>
   );
