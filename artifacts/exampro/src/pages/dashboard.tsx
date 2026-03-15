@@ -527,25 +527,55 @@ export default function Dashboard() {
                       <Download className="w-4 h-4" />
                       Download PDF
                     </a>
-                    <button
-                      onClick={() => handleSendEmail(lastResult)}
-                      disabled={sendingEmailId === lastResult.id}
-                      className="flex items-center justify-center gap-2 w-full h-9 rounded-lg border border-white/15 bg-background/40 hover:bg-background/70 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
-                    >
-                      {sendingEmailId === lastResult.id ? (
-                        <>
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          Sending email...
-                        </>
-                      ) : (
-                        <>
-                          <Mail className="w-3.5 h-3.5" />
-                          Send PDF link to email
-                        </>
-                      )}
-                    </button>
                   </motion.div>
                 )}
+              </CardContent>
+            </Card>
+
+            {/* Send to Email — always visible */}
+            <Card className="border-white/10 bg-card/60 backdrop-blur-sm">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Mail className="w-4 h-4 text-primary" />
+                  Send to Email
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  {lastResult || history.length > 0
+                    ? "Email the latest PDF link to admin inbox"
+                    : "Generate a PDF first to enable email sending"}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {(() => {
+                  const target = lastResult ?? history[0] ?? null;
+                  return (
+                    <>
+                      {target && (
+                        <p className="text-xs text-muted-foreground mb-3 truncate">
+                          <span className="font-medium text-foreground">{target.title}</span>
+                          {" · "}{target.totalQuestions} questions
+                        </p>
+                      )}
+                      <button
+                        onClick={() => target && handleSendEmail(target)}
+                        disabled={!target || sendingEmailId === target?.id}
+                        className="flex items-center justify-center gap-2 w-full h-10 rounded-lg bg-primary/10 hover:bg-primary/20 border border-primary/20 text-primary text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        {sendingEmailId === target?.id ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Sending email...
+                          </>
+                        ) : (
+                          <>
+                            <Mail className="w-4 h-4" />
+                            Send PDF to Email
+                          </>
+                        )}
+                      </button>
+                    </>
+                  );
+                })()}
               </CardContent>
             </Card>
 
