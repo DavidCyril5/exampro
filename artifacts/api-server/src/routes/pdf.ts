@@ -48,7 +48,7 @@ async function fetchQuestions(subject: string, _year: string, count: number): Pr
   const seenIds = new Set<number>();
   const results: AlocQuestion[] = [];
   const maxAttempts = count * 6;
-  const BATCH = 5;
+  const BATCH = 4;
 
   for (let i = 0; i < maxAttempts && results.length < count; i += BATCH) {
     const batchSize = Math.min(BATCH, maxAttempts - i);
@@ -61,7 +61,7 @@ async function fetchQuestions(subject: string, _year: string, count: number): Pr
         results.push(q);
       }
     }
-    if (results.length < count) await sleep(120);
+    if (results.length < count) await sleep(200);
   }
 
   return results.slice(0, count);
@@ -255,7 +255,9 @@ router.post("/generate", async (req: Request, res: Response) => {
 
   try {
     const questionSets: { subject: string; year: string; questions: AlocQuestion[] }[] = [];
-    for (const detail of subjectDetails) {
+    for (let i = 0; i < subjectDetails.length; i++) {
+      if (i > 0) await sleep(3000);
+      const detail = subjectDetails[i];
       const qs = await fetchQuestions(detail.subject, detail.year || "", detail.count || 10);
       questionSets.push({ subject: detail.subject, year: detail.year || "Mixed", questions: qs });
     }
