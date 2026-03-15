@@ -81,6 +81,7 @@ export default function Dashboard() {
   ]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
+  const [sendToEmail, setSendToEmail] = useState(false);
   const [lastResult, setLastResult] = useState<HistoryItem | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>(() => {
     try {
@@ -177,6 +178,10 @@ export default function Dashboard() {
       setLastResult(item);
       setHistory((prev) => [item, ...prev].slice(0, 50));
       toast({ title: "PDF Ready!", description: `${item.totalQuestions} questions generated. Click the download button below.` });
+
+      if (sendToEmail) {
+        handleSendEmail(item);
+      }
     } catch (err: any) {
       toast({ title: "Generation Failed", description: err.message || "Something went wrong.", variant: "destructive" });
     } finally {
@@ -483,6 +488,20 @@ export default function Dashboard() {
                   </div>
                 )}
 
+                {/* Email delivery toggle */}
+                <div className="flex items-center justify-between p-3 rounded-xl bg-background/40 border border-white/5">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <Mail className="w-3.5 h-3.5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium leading-none">Send to email when ready</p>
+                      <p className="text-xs text-muted-foreground mt-1">Auto-email PDF link after generation</p>
+                    </div>
+                  </div>
+                  <Switch checked={sendToEmail} onCheckedChange={setSendToEmail} />
+                </div>
+
                 <Button
                   onClick={handleGenerate}
                   disabled={isGenerating || subjects.length === 0}
@@ -529,53 +548,6 @@ export default function Dashboard() {
                     </a>
                   </motion.div>
                 )}
-              </CardContent>
-            </Card>
-
-            {/* Send to Email — always visible */}
-            <Card className="border-white/10 bg-card/60 backdrop-blur-sm">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Mail className="w-4 h-4 text-primary" />
-                  Send to Email
-                </CardTitle>
-                <CardDescription className="text-xs">
-                  {lastResult || history.length > 0
-                    ? "Email the latest PDF link to admin inbox"
-                    : "Generate a PDF first to enable email sending"}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {(() => {
-                  const target = lastResult ?? history[0] ?? null;
-                  return (
-                    <>
-                      {target && (
-                        <p className="text-xs text-muted-foreground mb-3 truncate">
-                          <span className="font-medium text-foreground">{target.title}</span>
-                          {" · "}{target.totalQuestions} questions
-                        </p>
-                      )}
-                      <button
-                        onClick={() => target && handleSendEmail(target)}
-                        disabled={!target || sendingEmailId === target?.id}
-                        className="flex items-center justify-center gap-2 w-full h-10 rounded-lg bg-primary/10 hover:bg-primary/20 border border-primary/20 text-primary text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                      >
-                        {sendingEmailId === target?.id ? (
-                          <>
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            Sending email...
-                          </>
-                        ) : (
-                          <>
-                            <Mail className="w-4 h-4" />
-                            Send PDF to Email
-                          </>
-                        )}
-                      </button>
-                    </>
-                  );
-                })()}
               </CardContent>
             </Card>
 
