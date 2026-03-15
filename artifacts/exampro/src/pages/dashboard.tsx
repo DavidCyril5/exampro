@@ -71,7 +71,8 @@ export default function Dashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const [title, setTitle] = useState("JAMB CBT Practice Examination");
+  const currentYear = new Date().getFullYear();
+  const [title, setTitle] = useState("JAMB CBT Q&A SUCCESSFULLY EXTRACTED");
   const [subtitle, setSubtitle] = useState("");
   const [schoolName, setSchoolName] = useState("");
   const [profileCode, setProfileCode] = useState("");
@@ -279,8 +280,8 @@ export default function Dashboard() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="JAMB CBT Practice Examination">JAMB CBT Practice Examination</SelectItem>
-                        <SelectItem value="DE- Direct Entry">DE- Direct Entry</SelectItem>
+                        <SelectItem value="JAMB CBT Q&A SUCCESSFULLY EXTRACTED">JAMB CBT Q&amp;A SUCCESSFULLY EXTRACTED</SelectItem>
+                        <SelectItem value={`${currentYear} DIRECT ENTRY CBT SUCCESSFULLY EXTRACTED`}>{currentYear} DIRECT ENTRY CBT SUCCESSFULLY EXTRACTED</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

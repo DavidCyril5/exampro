@@ -99,7 +99,7 @@ function drawPageHeader(doc: PDFKit.PDFDocument, title: string, jambRegNo: strin
   doc.fontSize(16).fillColor("#000000").font("Helvetica-Bold")
     .text("EXAMCORE", margin, 14);
   doc.fontSize(7).fillColor("#000000").font("Helvetica")
-    .text("JAMB CBT PRACTICE PLATFORM", margin, 34);
+    .text(`${new Date().getFullYear()} UTME Q/A`, margin, 34);
   doc.fontSize(7).fillColor("#000000").font("Helvetica")
     .text("www.jamb.gov.ng", margin, 45);
 
