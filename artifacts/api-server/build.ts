@@ -1,7 +1,8 @@
 import path from "path";
 import { fileURLToPath } from "url";
 import { build as esbuild } from "esbuild";
-import { rm, readFile } from "fs/promises";
+import { rm, readFile, cp, mkdir } from "fs/promises";
+import { execSync } from "child_process";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -67,6 +68,23 @@ async function buildAll() {
     external: externals,
     logLevel: "info",
   });
+
+  console.log("building frontend...");
+  const repoRoot = path.resolve(__dirname, "../..");
+  execSync("pnpm --filter @workspace/exampro run build", {
+    cwd: repoRoot,
+    stdio: "inherit",
+    env: { ...process.env, BASE_PATH: "/" },
+  });
+  const frontendDist = path.resolve(repoRoot, "artifacts/exampro/dist/public");
+  await cp(frontendDist, path.join(distDir, "public"), { recursive: true });
+  console.log("frontend copied to dist/public");
+
+  console.log("copying assets...");
+  const assetsDir = path.resolve(__dirname, "assets");
+  await mkdir(assetsDir, { recursive: true });
+  await cp(path.resolve(__dirname, "src/assets"), assetsDir, { recursive: true });
+  console.log("assets copied");
 }
 
 buildAll().catch((err) => {

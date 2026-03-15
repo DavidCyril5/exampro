@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "NODE_ENV=development tsx ./src/index.ts",
     "build": "tsx ./build.ts",
+    "start": "node dist/index.cjs",
     "build:vercel": "tsx ./build-vercel.ts",
     "build:netlify": "tsx ./build-netlify.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
