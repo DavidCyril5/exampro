@@ -71,7 +71,6 @@ export default function Dashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const currentYear = new Date().getFullYear();
   const [title, setTitle] = useState("JAMB CBT Q&A SUCCESSFULLY EXTRACTED");
   const [subtitle, setSubtitle] = useState("");
   const [schoolName, setSchoolName] = useState("");
@@ -275,15 +274,12 @@ export default function Dashboard() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1.5 md:col-span-2">
                     <Label className="text-xs font-medium">Exam Title</Label>
-                    <Select value={title} onValueChange={setTitle}>
-                      <SelectTrigger className="h-10 bg-background/50 border-white/10 text-sm">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="JAMB CBT Q&A SUCCESSFULLY EXTRACTED">JAMB CBT Q&amp;A SUCCESSFULLY EXTRACTED</SelectItem>
-                        <SelectItem value={`${currentYear} DIRECT ENTRY CBT SUCCESSFULLY EXTRACTED`}>{currentYear} DIRECT ENTRY CBT SUCCESSFULLY EXTRACTED</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Input
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      placeholder="e.g. JAMB CBT Q&A SUCCESSFULLY EXTRACTED"
+                      className="h-10 bg-background/50 border-white/10 text-sm"
+                    />
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs font-medium">JAMB REG NO</Label>
