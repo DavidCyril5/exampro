@@ -72,6 +72,7 @@ export default function Dashboard() {
   const [title, setTitle] = useState("JAMB CBT Practice Examination");
   const [subtitle, setSubtitle] = useState("");
   const [schoolName, setSchoolName] = useState("");
+  const [profileCode, setProfileCode] = useState("");
   const [duration, setDuration] = useState("2 Hours");
   const [includeAnswers, setIncludeAnswers] = useState(false);
   const [includeAnswerKey, setIncludeAnswerKey] = useState(true);
@@ -139,6 +140,7 @@ export default function Dashboard() {
         title,
         subtitle,
         schoolName,
+        profileCode,
         duration,
         subjects: subjects.map((s) => s.subject.toLowerCase()),
         questionsPerSubject: subjects[0]?.count || 10,
@@ -268,14 +270,17 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
+                  <div className="space-y-1.5 md:col-span-2">
                     <Label className="text-xs font-medium">Exam Title</Label>
-                    <Input
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      placeholder="JAMB CBT Practice Examination"
-                      className="h-10 bg-background/50 border-white/10 text-sm"
-                    />
+                    <Select value={title} onValueChange={setTitle}>
+                      <SelectTrigger className="h-10 bg-background/50 border-white/10 text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="JAMB CBT Practice Examination">JAMB CBT Practice Examination</SelectItem>
+                        <SelectItem value="DE- Direct Entry">DE- Direct Entry</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs font-medium">JAMB REG NO</Label>
@@ -283,6 +288,15 @@ export default function Dashboard() {
                       value={subtitle}
                       onChange={(e) => setSubtitle(e.target.value)}
                       placeholder="Enter JAMB Registration Number"
+                      className="h-10 bg-background/50 border-white/10 text-sm"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium">Profile Code</Label>
+                    <Input
+                      value={profileCode}
+                      onChange={(e) => setProfileCode(e.target.value)}
+                      placeholder="Enter profile code"
                       className="h-10 bg-background/50 border-white/10 text-sm"
                     />
                   </div>
@@ -295,7 +309,7 @@ export default function Dashboard() {
                       className="h-10 bg-background/50 border-white/10 text-sm"
                     />
                   </div>
-                  <div className="space-y-1.5 md:col-span-2">
+                  <div className="space-y-1.5">
                     <Label className="text-xs font-medium flex items-center gap-1.5">
                       <Clock className="w-3 h-3" /> Duration
                     </Label>
@@ -303,7 +317,7 @@ export default function Dashboard() {
                       value={duration}
                       onChange={(e) => setDuration(e.target.value)}
                       placeholder="e.g. 2 Hours"
-                      className="h-10 bg-background/50 border-white/10 text-sm max-w-xs"
+                      className="h-10 bg-background/50 border-white/10 text-sm"
                     />
                   </div>
                 </div>
