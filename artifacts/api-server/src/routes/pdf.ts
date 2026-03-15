@@ -292,43 +292,48 @@ router.post("/generate", async (req: Request, res: Response) => {
         }
       }
 
-      // — Answer key page —
+      // — Answer key: one page per subject —
       if (includeAnswerKey && !includeAnswers && questionSets.some((s) => s.questions.length > 0)) {
-        doc.addPage();
-        doc.y = 158;
-
         const W = doc.page.width;
         const margin = 42;
         const contentW = W - margin * 2;
-
-        const bannerY = doc.y;
-        doc.rect(margin, bannerY, contentW, 30).fill("#f0f0f0").stroke("#000000");
-        doc.fontSize(14).fillColor("#000000").font("Helvetica-Bold")
-          .text("ANSWER KEY", margin + 10, bannerY + 8, { width: contentW - 20, lineBreak: false });
-        doc.y = bannerY + 44;
-
         const cols = 6;
         const colW = contentW / cols;
 
         for (const { subject, questions } of questionSets) {
           if (questions.length === 0) continue;
 
-          const subjectY = doc.y;
-          doc.fontSize(10).fillColor("#000000").font("Helvetica-Bold")
-            .text(subject.toUpperCase(), margin, subjectY, { lineBreak: false });
-          doc.y = subjectY + 18;
+          doc.addPage();
+          doc.y = 158;
 
+          // Subject banner
+          const bannerY = doc.y;
+          doc.rect(margin, bannerY, contentW, 36).fill("#000000");
+          doc.fontSize(13).fillColor("#ffffff").font("Helvetica-Bold")
+            .text("ANSWER KEY", margin + 12, bannerY + 5, { width: contentW - 24, lineBreak: false });
+          doc.fontSize(10).fillColor("#cccccc").font("Helvetica")
+            .text(subject.toUpperCase(), margin + 12, bannerY + 21, { width: contentW - 24, lineBreak: false });
+          doc.y = bannerY + 52;
+
+          // Grid of answers
           let col = 0;
           let rowY = doc.y;
           let keyNum = 1;
 
           questions.forEach((q) => {
-            if (col === cols) { col = 0; rowY += 20; }
+            if (col === cols) { col = 0; rowY += 22; }
             const x = margin + col * colW;
-            doc.fontSize(9).fillColor("#000000").font("Helvetica")
-              .text(`${keyNum}.`, x, rowY, { width: 22, lineBreak: false });
-            doc.fontSize(9).fillColor("#000000").font("Helvetica-Bold")
-              .text(q.answer.toUpperCase(), x + 22, rowY, { width: colW - 24, lineBreak: false });
+
+            // subtle alternating cell background
+            if (Math.floor((keyNum - 1) / cols) % 2 === 0) {
+              doc.rect(x, rowY - 2, colW, 20).fill("#f5f5f5");
+            }
+
+            doc.fontSize(9).fillColor("#555555").font("Helvetica")
+              .text(`${keyNum}.`, x + 4, rowY + 2, { width: 20, lineBreak: false });
+            doc.fontSize(10).fillColor("#000000").font("Helvetica-Bold")
+              .text(q.answer.toUpperCase(), x + 24, rowY + 2, { width: colW - 28, lineBreak: false });
+
             keyNum++;
             col++;
           });
