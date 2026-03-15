@@ -388,7 +388,8 @@ router.post("/send-email", async (req: Request, res: Response) => {
   }
 
   const RESEND_API_KEY = process.env.RESEND_API_KEY;
-  const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "ogdavidcyril@gmail.com";
+  const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "infocheelee01@gmail.com";
+  const RESEND_FROM = process.env.RESEND_FROM || "ExamPro <noreply@jamb.anita.name.ng>";
 
   if (!RESEND_API_KEY) {
     return res.status(500).json({ error: "Resend API key not configured" });
@@ -480,7 +481,7 @@ router.post("/send-email", async (req: Request, res: Response) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "ExamPro <onboarding@resend.dev>",
+        from: RESEND_FROM,
         to: [ADMIN_EMAIL],
         subject: `PDF Ready: ${title || "JAMB CBT Practice Paper"} (${totalQuestions || "?"} questions)`,
         html,
