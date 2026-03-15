@@ -3,7 +3,7 @@ import { useAuth } from "@/context/AuthContext";
 import { motion } from "framer-motion";
 import {
   FileText, Download, Loader2, Plus, Trash2, Settings2,
-  BookOpen, Clock, CheckSquare, Eye, Key, History, ExternalLink, Mail
+  BookOpen, CheckSquare, Eye, Key, History, ExternalLink, Mail
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -73,7 +73,6 @@ export default function Dashboard() {
   const [subtitle, setSubtitle] = useState("");
   const [schoolName, setSchoolName] = useState("");
   const [profileCode, setProfileCode] = useState("");
-  const [duration, setDuration] = useState("2 Hours");
   const [includeAnswers, setIncludeAnswers] = useState(false);
   const [includeAnswerKey, setIncludeAnswerKey] = useState(true);
   const [subjects, setSubjects] = useState<SubjectEntry[]>([
@@ -141,7 +140,6 @@ export default function Dashboard() {
         subtitle,
         schoolName,
         profileCode,
-        duration,
         subjects: subjects.map((s) => s.subject.toLowerCase()),
         questionsPerSubject: subjects[0]?.count || 10,
         year: "",
@@ -306,17 +304,6 @@ export default function Dashboard() {
                       value={schoolName}
                       onChange={(e) => setSchoolName(e.target.value)}
                       placeholder="Enter full name"
-                      className="h-10 bg-background/50 border-white/10 text-sm"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-medium flex items-center gap-1.5">
-                      <Clock className="w-3 h-3" /> Duration
-                    </Label>
-                    <Input
-                      value={duration}
-                      onChange={(e) => setDuration(e.target.value)}
-                      placeholder="e.g. 2 Hours"
                       className="h-10 bg-background/50 border-white/10 text-sm"
                     />
                   </div>

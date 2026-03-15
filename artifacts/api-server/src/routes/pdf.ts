@@ -82,7 +82,7 @@ function cleanText(text: string): string {
     .trim();
 }
 
-function drawPageHeader(doc: PDFKit.PDFDocument, title: string, jambRegNo: string, duration: string, fullName: string, profileCode: string) {
+function drawPageHeader(doc: PDFKit.PDFDocument, title: string, jambRegNo: string, fullName: string, profileCode: string) {
   const W = doc.page.width;
   const margin = 42;
   const contentW = W - margin * 2;
@@ -104,36 +104,29 @@ function drawPageHeader(doc: PDFKit.PDFDocument, title: string, jambRegNo: strin
   // — Divider between branding/title and info fields —
   doc.rect(margin, 62, contentW, 0.75).fill("#000000");
 
-  // — Info row: FULL NAME | JAMB REG NO | PROFILE CODE | DURATION —
+  // — Info row: FULL NAME | JAMB REG NO | PROFILE CODE —
   const infoY = 70;
-  const quarterW = contentW / 4;
+  const thirdW = contentW / 3;
 
   // Full Name
   doc.fontSize(8).fillColor("#000000").font("Helvetica-Bold")
     .text("FULL NAME:", margin, infoY);
   doc.fontSize(9).fillColor("#000000").font("Helvetica-Bold")
-    .text(fullName || "________________________________", margin, infoY + 12, { width: quarterW - 8 });
+    .text(fullName || "________________________________", margin, infoY + 12, { width: thirdW - 10 });
 
   // JAMB REG NO
-  const regX = margin + quarterW;
+  const regX = margin + thirdW;
   doc.fontSize(8).fillColor("#000000").font("Helvetica-Bold")
     .text("JAMB REG NO:", regX, infoY);
   doc.fontSize(9).fillColor("#000000").font("Helvetica-Bold")
-    .text(jambRegNo || "________________________________", regX, infoY + 12, { width: quarterW - 8 });
+    .text(jambRegNo || "________________________________", regX, infoY + 12, { width: thirdW - 10 });
 
   // Profile Code
-  const profX = margin + quarterW * 2;
+  const profX = margin + thirdW * 2;
   doc.fontSize(8).fillColor("#000000").font("Helvetica-Bold")
     .text("PROFILE CODE:", profX, infoY);
   doc.fontSize(9).fillColor("#000000").font("Helvetica-Bold")
-    .text(profileCode || "________________________________", profX, infoY + 12, { width: quarterW - 8 });
-
-  // Duration
-  const durX = margin + quarterW * 3;
-  doc.fontSize(8).fillColor("#000000").font("Helvetica-Bold")
-    .text("DURATION:", durX, infoY);
-  doc.fontSize(9).fillColor("#000000").font("Helvetica-Bold")
-    .text(duration || "—", durX, infoY + 12, { width: quarterW - 4 });
+    .text(profileCode || "________________________________", profX, infoY + 12, { width: thirdW - 4 });
 
   // — Bottom border —
   doc.rect(margin, 126, contentW, 1).fill("#000000");
@@ -253,7 +246,6 @@ router.post("/generate", async (req: Request, res: Response) => {
     schoolName,
     profileCode,
     examDate,
-    duration,
     includeAnswers,
     includeAnswerKey,
     subjectDetails,
@@ -353,7 +345,7 @@ router.post("/generate", async (req: Request, res: Response) => {
       // — Stamp header on page 1 only —
       doc.bufferedPageRange();
       doc.switchToPage(0);
-      drawPageHeader(doc, title || "JAMB CBT Practice Paper", subtitle || "", duration || "", schoolName || "", profileCode || "");
+      drawPageHeader(doc, title || "JAMB CBT Practice Paper", subtitle || "", schoolName || "", profileCode || "");
 
       doc.flushPages();
       doc.end();
