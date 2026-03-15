@@ -1,6 +1,12 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import PDFDocument from "pdfkit";
 import axios from "axios";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const JAMB_LOGO = path.join(__dirname, "../assets/jamb-logo.png");
 
 const router: IRouter = Router();
 
@@ -342,8 +348,22 @@ router.post("/generate", async (req: Request, res: Response) => {
         }
       }
 
+      // — Watermark on every page —
+      const { start: wmStart, count: wmCount } = doc.bufferedPageRange();
+      for (let i = wmStart; i < wmStart + wmCount; i++) {
+        doc.switchToPage(i);
+        const pW = doc.page.width;
+        const pH = doc.page.height;
+        const logoSize = pW * 0.82;
+        const x = (pW - logoSize) / 2;
+        const y = (pH - logoSize) / 2;
+        doc.save();
+        doc.opacity(0.05);
+        doc.image(JAMB_LOGO, x, y, { fit: [logoSize, logoSize], align: "center", valign: "center" });
+        doc.restore();
+      }
+
       // — Stamp header on page 1 only —
-      doc.bufferedPageRange();
       doc.switchToPage(0);
       drawPageHeader(doc, title || "JAMB CBT Practice Paper", subtitle || "", schoolName || "", profileCode || "");
 
