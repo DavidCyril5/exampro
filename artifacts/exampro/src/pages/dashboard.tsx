@@ -52,6 +52,8 @@ interface SubjectEntry {
 interface HistoryItem {
   id: string;
   title: string;
+  studentName: string;
+  regNo: string;
   subjects: { subject: string; count: number }[];
   url: string;
   filename: string;
@@ -168,6 +170,8 @@ export default function Dashboard() {
       const item: HistoryItem = {
         id: Date.now().toString(),
         title: data.title || title,
+        studentName: schoolName || "",
+        regNo: subtitle || "",
         subjects: data.subjects || subjects.map((s) => ({ subject: s.subject, count: s.count })),
         url: data.url,
         filename: data.filename,
@@ -614,9 +618,12 @@ export default function Dashboard() {
                       <FileText className="w-4 h-4 text-primary" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{item.title}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {item.subjects.map((s) => `${s.subject} (${s.count}Q)`).join(" · ")}
+                      <p className="text-sm font-semibold truncate">
+                        {item.studentName || "Unknown Student"}
+                        {item.regNo && <span className="text-primary ml-1.5 font-normal text-xs">· {item.regNo}</span>}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {item.title} · {item.subjects.map((s) => `${s.subject} (${s.count}Q)`).join(", ")}
                       </p>
                       <p className="text-xs text-muted-foreground/60 mt-0.5">
                         {new Date(item.generatedAt).toLocaleString()} · {item.totalQuestions} questions
