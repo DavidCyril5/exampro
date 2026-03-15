@@ -3,7 +3,7 @@ import { useAuth } from "@/context/AuthContext";
 import { motion } from "framer-motion";
 import {
   FileText, Download, Loader2, Plus, Trash2, Settings2,
-  BookOpen, Clock, CheckSquare, Eye, Key, History, ExternalLink
+  BookOpen, Clock, CheckSquare, Eye, Key, History, ExternalLink, Mail
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -80,6 +80,7 @@ export default function Dashboard() {
     { id: generateId(), subject: "Mathematics", count: 40 },
   ]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [lastResult, setLastResult] = useState<HistoryItem | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>(() => {
     try {
@@ -180,6 +181,32 @@ export default function Dashboard() {
       toast({ title: "Generation Failed", description: err.message || "Something went wrong.", variant: "destructive" });
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleSendEmail = async (item: HistoryItem) => {
+    setIsSendingEmail(true);
+    try {
+      const res = await fetch(`${getBaseUrl()}/api/pdf/send-email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          url: item.url,
+          filename: item.filename,
+          title: item.title,
+          subjects: item.subjects,
+          totalQuestions: item.totalQuestions,
+          generatedAt: item.generatedAt,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.details || data.error || "Failed to send email");
+      toast({ title: "Email Sent!", description: `PDF link sent to ${data.sentTo}` });
+    } catch (err: any) {
+      toast({ title: "Email Failed", description: err.message || "Could not send email.", variant: "destructive" });
+    } finally {
+      setIsSendingEmail(false);
     }
   };
 
@@ -500,6 +527,23 @@ export default function Dashboard() {
                       <Download className="w-4 h-4" />
                       Download PDF
                     </a>
+                    <button
+                      onClick={() => handleSendEmail(lastResult)}
+                      disabled={isSendingEmail}
+                      className="flex items-center justify-center gap-2 w-full h-9 rounded-lg border border-white/15 bg-background/40 hover:bg-background/70 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+                    >
+                      {isSendingEmail ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          Sending email...
+                        </>
+                      ) : (
+                        <>
+                          <Mail className="w-3.5 h-3.5" />
+                          Send PDF link to email
+                        </>
+                      )}
+                    </button>
                   </motion.div>
                 )}
               </CardContent>

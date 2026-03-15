@@ -379,4 +379,126 @@ router.post("/generate", async (req: Request, res: Response) => {
   }
 });
 
+// — Send PDF link to admin email via Resend —
+router.post("/send-email", async (req: Request, res: Response) => {
+  const { url, filename, title, subjects, totalQuestions, generatedAt } = req.body;
+
+  if (!url) {
+    return res.status(400).json({ error: "Missing PDF URL" });
+  }
+
+  const RESEND_API_KEY = process.env.RESEND_API_KEY;
+  const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "ogdavidcyril@gmail.com";
+
+  if (!RESEND_API_KEY) {
+    return res.status(500).json({ error: "Resend API key not configured" });
+  }
+
+  const subjectList = Array.isArray(subjects)
+    ? subjects.map((s: any) => `<li style="margin:4px 0">${s.subject} &mdash; ${s.count} questions</li>`).join("")
+    : "";
+
+  const formattedDate = generatedAt
+    ? new Date(generatedAt).toLocaleString("en-US", { dateStyle: "full", timeStyle: "short" })
+    : new Date().toLocaleString();
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#0f0f0f;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:#e0e0e0">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0f0f0f;padding:32px 0">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="background:#1a1a1a;border-radius:12px;overflow:hidden;border:1px solid #2a2a2a">
+
+        <!-- Header -->
+        <tr>
+          <td style="background:linear-gradient(135deg,#6366f1,#8b5cf6);padding:32px 40px;text-align:center">
+            <h1 style="margin:0;font-size:24px;font-weight:800;color:#fff;letter-spacing:-0.5px">
+              EXAMPRO &times; EXAMCORE
+            </h1>
+            <p style="margin:8px 0 0;font-size:13px;color:rgba(255,255,255,0.75);letter-spacing:2px;text-transform:uppercase">
+              PDF Ready for Download
+            </p>
+          </td>
+        </tr>
+
+        <!-- Body -->
+        <tr>
+          <td style="padding:36px 40px">
+            <h2 style="margin:0 0 8px;font-size:18px;font-weight:700;color:#f0f0f0">${title || "JAMB CBT Practice Paper"}</h2>
+            <p style="margin:0 0 24px;font-size:13px;color:#888">Generated on ${formattedDate}</p>
+
+            <table width="100%" cellpadding="0" cellspacing="0" style="background:#111;border-radius:8px;padding:20px;margin-bottom:24px">
+              <tr>
+                <td>
+                  <p style="margin:0 0 12px;font-size:12px;font-weight:700;color:#6366f1;letter-spacing:1.5px;text-transform:uppercase">Subjects</p>
+                  <ul style="margin:0;padding-left:16px;font-size:14px;color:#ccc;line-height:1.7">
+                    ${subjectList}
+                  </ul>
+                  <p style="margin:16px 0 0;font-size:13px;color:#888">
+                    Total: <strong style="color:#f0f0f0">${totalQuestions || "—"} questions</strong>
+                  </p>
+                </td>
+              </tr>
+            </table>
+
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td align="center">
+                  <a href="${url}" style="display:inline-block;background:#6366f1;color:#fff;text-decoration:none;font-weight:700;font-size:15px;padding:14px 40px;border-radius:8px;letter-spacing:0.3px">
+                    Download PDF
+                  </a>
+                </td>
+              </tr>
+            </table>
+
+            <p style="margin:24px 0 0;font-size:12px;color:#555;text-align:center">
+              Or copy this link: <a href="${url}" style="color:#6366f1;word-break:break-all">${url}</a>
+            </p>
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="padding:20px 40px;border-top:1px solid #2a2a2a;text-align:center">
+            <p style="margin:0;font-size:11px;color:#444">ExamPro &times; ExamCore &mdash; Admin PDF Generator</p>
+          </td>
+        </tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
+  try {
+    const emailRes = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: "ExamPro <onboarding@resend.dev>",
+        to: [ADMIN_EMAIL],
+        subject: `PDF Ready: ${title || "JAMB CBT Practice Paper"} (${totalQuestions || "?"} questions)`,
+        html,
+      }),
+    });
+
+    const emailData = await emailRes.json() as any;
+
+    if (!emailRes.ok) {
+      console.error("Resend error:", emailData);
+      return res.status(500).json({ error: "Failed to send email", details: emailData.message });
+    }
+
+    res.json({ success: true, id: emailData.id, sentTo: ADMIN_EMAIL });
+  } catch (err: any) {
+    console.error("Email error:", err);
+    res.status(500).json({ error: "Failed to send email", message: err.message });
+  }
+});
+
 export default router;
