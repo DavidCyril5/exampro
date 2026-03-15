@@ -3,7 +3,7 @@ import { useAuth } from "@/context/AuthContext";
 import { motion } from "framer-motion";
 import {
   FileText, Download, Loader2, Plus, Trash2, Settings2,
-  BookOpen, CheckSquare, Eye, Key, History, ExternalLink, Mail
+  BookOpen, CheckSquare, Eye, Key, History, ExternalLink, Mail, X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -653,6 +653,13 @@ export default function Dashboard() {
                         <Download className="w-3.5 h-3.5" />
                         Download
                       </a>
+                      <button
+                        onClick={() => setHistory((prev) => prev.filter((h) => h.id !== item.id))}
+                        title="Delete from history"
+                        className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </motion.div>
                 ))}
