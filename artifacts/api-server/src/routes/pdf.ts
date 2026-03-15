@@ -4,13 +4,15 @@ import axios from "axios";
 
 const router: IRouter = Router();
 
-const ALOC_TOKENS = [
-  "QB-a426946c75c1e80cb2ef",
-  "ALOC-49d828d7860d4fe4a4bc",
-  "ALOC-10c7a23ffb79a58ba518",
-  "ALOC-20fb18ea4b4a8b4d6cdf",
-  "ALOC-f860074d17d703f22857",
-];
+const ALOC_TOKENS: string[] = process.env.ALOC_TOKEN
+  ? process.env.ALOC_TOKEN.split(",").map((t) => t.trim()).filter(Boolean)
+  : [
+      "QB-a426946c75c1e80cb2ef",
+      "ALOC-49d828d7860d4fe4a4bc",
+      "ALOC-10c7a23ffb79a58ba518",
+      "ALOC-20fb18ea4b4a8b4d6cdf",
+      "ALOC-f860074d17d703f22857",
+    ];
 function randomToken(): string {
   return ALOC_TOKENS[Math.floor(Math.random() * ALOC_TOKENS.length)];
 }
