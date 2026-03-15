@@ -25,45 +25,37 @@ function randomYear(): string {
   return JAMB_YEARS[Math.floor(Math.random() * JAMB_YEARS.length)];
 }
 
-async function fetchOneQuestion(subject: string): Promise<AlocQuestion | null> {
-  const year = randomYear();
-  const url = `${ALOC_BASE}/q?subject=${encodeURIComponent(subject)}&type=utme&year=${year}`;
-  try {
-    const res = await axios.get(url, {
-      headers: { AccessToken: ALOC_TOKEN },
-      timeout: 8000,
-    });
-    if (res.data?.status === 200 && res.data?.data) {
-      const q = Array.isArray(res.data.data) ? res.data.data[0] : res.data.data;
-      return q || null;
-    }
-  } catch {
-  }
-  return null;
-}
-
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 async function fetchQuestions(subject: string, _year: string, count: number): Promise<AlocQuestion[]> {
   const seenIds = new Set<number>();
   const results: AlocQuestion[] = [];
-  const maxAttempts = count * 6;
-  const BATCH = 4;
+  const maxAttempts = count * 4;
 
-  for (let i = 0; i < maxAttempts && results.length < count; i += BATCH) {
-    const batchSize = Math.min(BATCH, maxAttempts - i);
-    const batch = await Promise.all(
-      Array.from({ length: batchSize }, () => fetchOneQuestion(subject))
-    );
-    for (const q of batch) {
-      if (q && !seenIds.has(q.id) && results.length < count) {
-        seenIds.add(q.id);
-        results.push(q);
+  for (let i = 0; i < maxAttempts && results.length < count; i++) {
+    const year = randomYear();
+    const url = `${ALOC_BASE}/q?subject=${encodeURIComponent(subject)}&type=utme&year=${year}`;
+    try {
+      const res = await axios.get(url, { headers: { AccessToken: ALOC_TOKEN }, timeout: 8000 });
+      if (res.data?.status === 200 && res.data?.data) {
+        const q = Array.isArray(res.data.data) ? res.data.data[0] : res.data.data;
+        if (q && !seenIds.has(q.id)) {
+          seenIds.add(q.id);
+          results.push(q);
+        }
+      }
+      await sleep(500);
+    } catch (e: any) {
+      if (e.response?.status === 429) {
+        console.warn(`[ALOC] 429 on ${subject}, cooling 10s`);
+        await sleep(10000);
+      } else {
+        await sleep(500);
       }
     }
-    if (results.length < count) await sleep(200);
   }
 
+  console.log(`[ALOC] ${subject}: got ${results.length}/${count}`);
   return results.slice(0, count);
 }
 
