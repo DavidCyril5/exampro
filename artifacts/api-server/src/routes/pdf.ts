@@ -360,7 +360,9 @@ router.post("/generate", async (req: Request, res: Response) => {
     });
 
     // — Upload to CDN —
-    const filename = `examcore-${Date.now()}.pdf`;
+    const safeName = (schoolName || "student").replace(/[^a-zA-Z0-9\s-]/g, "").trim().replace(/\s+/g, "_");
+    const safeRegNo = (subtitle || Date.now().toString()).replace(/[^a-zA-Z0-9-]/g, "");
+    const filename = `${safeName}-${safeRegNo}.pdf`;
     const formData = new FormData();
     formData.append("file", new Blob([pdfBuffer], { type: "application/pdf" }), filename);
     formData.append("filename", filename);
