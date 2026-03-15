@@ -80,7 +80,7 @@ export default function Dashboard() {
     { id: generateId(), subject: "Mathematics", count: 40 },
   ]);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
   const [lastResult, setLastResult] = useState<HistoryItem | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>(() => {
     try {
@@ -185,7 +185,7 @@ export default function Dashboard() {
   };
 
   const handleSendEmail = async (item: HistoryItem) => {
-    setIsSendingEmail(true);
+    setSendingEmailId(item.id);
     try {
       const res = await fetch(`${getBaseUrl()}/api/pdf/send-email`, {
         method: "POST",
@@ -206,7 +206,7 @@ export default function Dashboard() {
     } catch (err: any) {
       toast({ title: "Email Failed", description: err.message || "Could not send email.", variant: "destructive" });
     } finally {
-      setIsSendingEmail(false);
+      setSendingEmailId(null);
     }
   };
 
@@ -529,10 +529,10 @@ export default function Dashboard() {
                     </a>
                     <button
                       onClick={() => handleSendEmail(lastResult)}
-                      disabled={isSendingEmail}
+                      disabled={sendingEmailId === lastResult.id}
                       className="flex items-center justify-center gap-2 w-full h-9 rounded-lg border border-white/15 bg-background/40 hover:bg-background/70 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
                     >
-                      {isSendingEmail ? (
+                      {sendingEmailId === lastResult.id ? (
                         <>
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
                           Sending email...
@@ -619,16 +619,31 @@ export default function Dashboard() {
                         {new Date(item.generatedAt).toLocaleString()} · {item.totalQuestions} questions
                       </p>
                     </div>
-                    <a
-                      href={item.url}
-                      download={item.filename}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 px-3 h-8 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold transition-colors flex-shrink-0"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                      Download
-                    </a>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <button
+                        onClick={() => handleSendEmail(item)}
+                        disabled={sendingEmailId === item.id}
+                        title="Send PDF link to email"
+                        className="flex items-center gap-1.5 px-3 h-8 rounded-lg border border-white/10 bg-background/40 hover:bg-background/70 text-muted-foreground hover:text-foreground text-xs font-semibold transition-colors disabled:opacity-50"
+                      >
+                        {sendingEmailId === item.id ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Mail className="w-3.5 h-3.5" />
+                        )}
+                        Email
+                      </button>
+                      <a
+                        href={item.url}
+                        download={item.filename}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1.5 px-3 h-8 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold transition-colors"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        Download
+                      </a>
+                    </div>
                   </motion.div>
                 ))}
               </CardContent>
