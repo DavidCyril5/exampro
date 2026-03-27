@@ -1,6 +1,7 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import PDFDocument from "pdfkit";
 import axios from "axios";
+import FormData from "form-data";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -371,28 +372,27 @@ router.post("/generate", async (req: Request, res: Response) => {
       doc.end();
     });
 
-    // — Upload to CDN —
+    // — Upload to Catbox —
     const safeName = (schoolName || "student").replace(/[^a-zA-Z0-9\s-]/g, "").trim().replace(/\s+/g, "_");
     const safeRegNo = (subtitle || Date.now().toString()).replace(/[^a-zA-Z0-9-]/g, "");
     const filename = `${safeName}-${safeRegNo}.pdf`;
     const formData = new FormData();
-    formData.append("file", new Blob([pdfBuffer], { type: "application/pdf" }), filename);
-    formData.append("filename", filename);
+    formData.append("reqtype", "fileupload");
+    formData.append("userhash", "");
+    formData.append("fileToUpload", pdfBuffer, { filename, contentType: "application/pdf" });
 
-    const uploadRes = await fetch("https://rynekoo-api.hf.space/tools/uploader/alibaba", {
-      method: "POST",
-      body: formData,
-      signal: AbortSignal.timeout(60000),
+    const uploadRes = await axios.post("https://catbox.moe/user/api.php", formData, {
+      headers: formData.getHeaders(),
+      timeout: 60000,
     });
 
-    if (!uploadRes.ok) throw new Error("CDN upload failed");
-    const uploadData = await uploadRes.json() as any;
-    if (!uploadData.success || !uploadData.result) throw new Error("CDN upload failed: no URL returned");
+    const catboxUrl = typeof uploadRes.data === "string" ? uploadRes.data.trim() : "";
+    if (!catboxUrl || !catboxUrl.startsWith("https://")) throw new Error("Catbox upload failed: no URL returned");
 
     const totalQuestions = questionSets.reduce((sum, s) => sum + s.questions.length, 0);
     res.json({
       success: true,
-      url: uploadData.result,
+      url: catboxUrl,
       filename,
       title: title || "JAMB CBT Practice Paper",
       subjects: questionSets.map((s) => ({ subject: s.subject, count: s.questions.length })),
