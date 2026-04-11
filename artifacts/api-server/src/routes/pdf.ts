@@ -1,7 +1,6 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import PDFDocument from "pdfkit";
 import axios from "axios";
-import FormData from "form-data";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -35,6 +34,9 @@ interface AlocQuestion {
   solution?: string;
   examtype: string;
   examyear: string;
+  hasPassage?: number;
+  questionNub?: number | null;
+  category?: string;
 }
 
 const JAMB_YEARS = ["2001","2002","2003","2004","2005","2006","2007","2008","2009","2010","2011","2012","2013","2014","2015","2016","2017","2018","2019","2020","2021","2022","2023"];
@@ -87,6 +89,67 @@ function cleanText(text: string): string {
     .replace(/&[a-z]+;/g, "")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function extractPassage(section: string): { instruction: string; passage: string } {
+  const cleaned = (section || "").replace(/<br\s*\/?>/gi, "\n").replace(/<[^>]+>/g, "");
+  const parts = cleaned.split(/\n\s*\n/);
+  if (parts.length >= 2) {
+    return { instruction: parts[0].trim(), passage: parts.slice(1).join("\n\n").trim() };
+  }
+  return { instruction: "", passage: cleaned.trim() };
+}
+
+function sortByPassage(questions: AlocQuestion[]): AlocQuestion[] {
+  const passageMap = new Map<string, AlocQuestion[]>();
+  const noPassage: AlocQuestion[] = [];
+  for (const q of questions) {
+    if (q.hasPassage) {
+      const key = (q.section || "").slice(0, 120);
+      if (!passageMap.has(key)) passageMap.set(key, []);
+      passageMap.get(key)!.push(q);
+    } else {
+      noPassage.push(q);
+    }
+  }
+  return [...Array.from(passageMap.values()).flat(), ...noPassage];
+}
+
+function drawPassageBlock(doc: PDFKit.PDFDocument, section: string) {
+  const W = doc.page.width;
+  const margin = 42;
+  const contentW = W - margin * 2;
+  const pageH = doc.page.height;
+
+  const { instruction, passage } = extractPassage(section);
+  const passageText = passage || instruction;
+  if (!passageText) return;
+
+  const textWidth = contentW - 23;
+  const realH = doc.heightOfString(passageText, { width: textWidth, fontSize: 9.5 }) + 20 + 52;
+  if (doc.y + realH > pageH - 80) doc.addPage();
+
+  doc.y += 6;
+
+  if (instruction && passage) {
+    doc.fontSize(8.5).fillColor("#555555").font("Helvetica-Oblique")
+      .text(instruction, margin, doc.y, { width: contentW });
+    doc.y += 6;
+  }
+
+  const boxY = doc.y;
+  const boxPad = 10;
+
+  const textH = doc.heightOfString(passageText, { width: textWidth, fontSize: 9.5 });
+  const boxH = textH + boxPad * 2;
+
+  doc.rect(margin, boxY, contentW, boxH).lineWidth(0.6).stroke("#aaaaaa");
+  doc.rect(margin, boxY, 3, boxH).fill("#555555");
+
+  doc.fontSize(9.5).fillColor("#1a1a1a").font("Helvetica")
+    .text(passageText, margin + boxPad + 3, boxY + boxPad, { width: textWidth });
+
+  doc.y = boxY + boxH + 12;
 }
 
 function drawPageHeader(doc: PDFKit.PDFDocument, title: string, jambRegNo: string, fullName: string, profileCode: string) {
@@ -293,8 +356,17 @@ router.post("/generate", async (req: Request, res: Response) => {
       // — Draw all question content —
       for (const { subject, year, questions } of questionSets) {
         drawSectionBanner(doc, subject, year, questions.length);
+        const sorted = sortByPassage(questions);
+        let lastPassageKey = "";
         let qNum = 1;
-        for (const q of questions) {
+        for (const q of sorted) {
+          if (q.hasPassage && q.section) {
+            const key = q.section.slice(0, 120);
+            if (key !== lastPassageKey) {
+              drawPassageBlock(doc, q.section);
+              lastPassageKey = key;
+            }
+          }
           drawQuestion(doc, q, qNum++, includeAnswers === true);
         }
       }
@@ -372,27 +444,28 @@ router.post("/generate", async (req: Request, res: Response) => {
       doc.end();
     });
 
-    // — Upload to Catbox —
+    // — Upload to CDN —
     const safeName = (schoolName || "student").replace(/[^a-zA-Z0-9\s-]/g, "").trim().replace(/\s+/g, "_");
     const safeRegNo = (subtitle || Date.now().toString()).replace(/[^a-zA-Z0-9-]/g, "");
     const filename = `${safeName}-${safeRegNo}.pdf`;
     const formData = new FormData();
-    formData.append("reqtype", "fileupload");
-    formData.append("userhash", "");
-    formData.append("fileToUpload", pdfBuffer, { filename, contentType: "application/pdf" });
+    formData.append("file", new Blob([pdfBuffer], { type: "application/pdf" }), filename);
+    formData.append("filename", filename);
 
-    const uploadRes = await axios.post("https://catbox.moe/user/api.php", formData, {
-      headers: formData.getHeaders(),
-      timeout: 60000,
+    const uploadRes = await fetch("https://rynekoo-api.hf.space/tools/uploader/alibaba", {
+      method: "POST",
+      body: formData,
+      signal: AbortSignal.timeout(60000),
     });
 
-    const catboxUrl = typeof uploadRes.data === "string" ? uploadRes.data.trim() : "";
-    if (!catboxUrl || !catboxUrl.startsWith("https://")) throw new Error("Catbox upload failed: no URL returned");
+    if (!uploadRes.ok) throw new Error("CDN upload failed");
+    const uploadData = await uploadRes.json() as any;
+    if (!uploadData.success || !uploadData.result) throw new Error("CDN upload failed: no URL returned");
 
     const totalQuestions = questionSets.reduce((sum, s) => sum + s.questions.length, 0);
     res.json({
       success: true,
-      url: catboxUrl,
+      url: uploadData.result,
       filename,
       title: title || "JAMB CBT Practice Paper",
       subjects: questionSets.map((s) => ({ subject: s.subject, count: s.questions.length })),
