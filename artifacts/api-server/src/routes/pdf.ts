@@ -487,28 +487,29 @@ router.post("/generate", async (req: Request, res: Response) => {
       doc.end();
     });
 
-    // — Upload to CDN —
+    // — Upload to Litterbox CDN —
     const safeName = (schoolName || "student").replace(/[^a-zA-Z0-9\s-]/g, "").trim().replace(/\s+/g, "_");
     const safeRegNo = (subtitle || Date.now().toString()).replace(/[^a-zA-Z0-9-]/g, "");
     const filename = `${safeName}-${safeRegNo}.pdf`;
     const formData = new FormData();
-    formData.append("file", new Blob([pdfBuffer], { type: "application/pdf" }), filename);
-    formData.append("filename", filename);
+    formData.append("reqtype", "fileupload");
+    formData.append("time", "72h");
+    formData.append("fileToUpload", new Blob([pdfBuffer], { type: "application/pdf" }), filename);
 
-    const uploadRes = await fetch("https://rynekoo-api.hf.space/tools/uploader/alibaba", {
+    const uploadRes = await fetch("https://litterbox.catbox.moe/resources/internals/api.php", {
       method: "POST",
       body: formData,
       signal: AbortSignal.timeout(60000),
     });
 
-    if (!uploadRes.ok) throw new Error("CDN upload failed");
-    const uploadData = await uploadRes.json() as any;
-    if (!uploadData.success || !uploadData.result) throw new Error("CDN upload failed: no URL returned");
+    if (!uploadRes.ok) throw new Error(`CDN upload failed: ${uploadRes.status}`);
+    const uploadUrl = (await uploadRes.text()).trim();
+    if (!uploadUrl.startsWith("http")) throw new Error(`CDN upload failed: unexpected response — ${uploadUrl}`);
 
     const totalQuestions = questionSets.reduce((sum, s) => sum + s.questions.length, 0);
     res.json({
       success: true,
-      url: uploadData.result,
+      url: uploadUrl,
       filename,
       title: title || "JAMB CBT Practice Paper",
       subjects: questionSets.map((s) => ({ subject: s.subject, count: s.questions.length })),
