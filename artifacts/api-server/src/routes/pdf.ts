@@ -24,6 +24,19 @@ function randomToken(): string {
 }
 const ALOC_BASE = "https://questions.aloc.com.ng/api/v2";
 
+const SUBJECT_SLUG_MAP: Record<string, string> = {
+  "christian religious studies": "crk",
+  "christian religious knowledge": "crk",
+  "islamic studies": "irk",
+  "islamic religious studies": "irk",
+  "islamic religious knowledge": "irk",
+};
+
+function toAlocSlug(subject: string): string {
+  const lower = subject.toLowerCase().trim();
+  return SUBJECT_SLUG_MAP[lower] ?? lower;
+}
+
 interface AlocQuestion {
   id: number;
   question: string;
@@ -54,7 +67,7 @@ async function fetchQuestions(subject: string, _year: string, count: number): Pr
 
   for (let i = 0; i < maxAttempts && results.length < count; i++) {
     const year = randomYear();
-    const url = `${ALOC_BASE}/q?subject=${encodeURIComponent(subject)}&type=utme&year=${year}`;
+    const url = `${ALOC_BASE}/q?subject=${encodeURIComponent(toAlocSlug(subject))}&type=utme&year=${year}`;
     try {
       const res = await axios.get(url, { headers: { AccessToken: randomToken() }, timeout: 8000 });
       if (res.data?.status === 200 && res.data?.data) {
