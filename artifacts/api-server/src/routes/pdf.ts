@@ -133,36 +133,51 @@ function drawPassageBlock(doc: PDFKit.PDFDocument, section: string) {
   const margin = 42;
   const contentW = W - margin * 2;
   const pageH = doc.page.height;
+  const boxPad = 12;
+  // text area is inside box: left bar(3) + leftPad(boxPad) + rightPad(boxPad)
+  const textWidth = contentW - 3 - boxPad * 2;
 
   const { instruction, passage } = extractPassage(section);
   const passageText = passage || instruction;
   if (!passageText) return;
 
-  const textWidth = contentW - 23;
-  const realH = doc.heightOfString(passageText, { width: textWidth, fontSize: 9.5 }) + 20 + 52;
-  if (doc.y + realH > pageH - 80) doc.addPage();
+  // Measure with the correct font first
+  doc.fontSize(9.5).font("Helvetica");
+  const textH = doc.heightOfString(passageText, { width: textWidth });
 
-  doc.y += 6;
+  // 15% safety buffer so the box never ends up smaller than the rendered text
+  const boxH = Math.ceil(textH * 1.15) + boxPad * 2;
+
+  let instrH = 0;
+  if (instruction && passage) {
+    doc.fontSize(8.5).font("Helvetica-Oblique");
+    instrH = doc.heightOfString(instruction, { width: contentW }) + 10;
+  }
+
+  const totalNeeded = 8 + instrH + boxH + 16;
+
+  // Only force a new page when we're far enough down that it's worth it
+  if (doc.y + totalNeeded > pageH - 50 && doc.y > 200) {
+    doc.addPage();
+  }
+
+  doc.y += 8;
 
   if (instruction && passage) {
     doc.fontSize(8.5).fillColor("#555555").font("Helvetica-Oblique")
       .text(instruction, margin, doc.y, { width: contentW });
-    doc.y += 6;
+    doc.y += 8;
   }
 
   const boxY = doc.y;
-  const boxPad = 10;
-
-  const textH = doc.heightOfString(passageText, { width: textWidth, fontSize: 9.5 });
-  const boxH = textH + boxPad * 2;
 
   doc.rect(margin, boxY, contentW, boxH).lineWidth(0.6).stroke("#aaaaaa");
   doc.rect(margin, boxY, 3, boxH).fill("#555555");
 
   doc.fontSize(9.5).fillColor("#1a1a1a").font("Helvetica")
-    .text(passageText, margin + boxPad + 3, boxY + boxPad, { width: textWidth });
+    .text(passageText, margin + 3 + boxPad, boxY + boxPad, { width: textWidth });
 
-  doc.y = boxY + boxH + 12;
+  doc.y = boxY + boxH + 16;
 }
 
 function drawPageHeader(doc: PDFKit.PDFDocument, title: string, jambRegNo: string, fullName: string, profileCode: string) {
@@ -254,83 +269,108 @@ function drawQuestion(doc: PDFKit.PDFDocument, q: AlocQuestion, num: number, sho
   const margin = 42;
   const contentW = W - margin * 2;
   const innerW = contentW - 32;
-
   const pageH = doc.page.height;
-  if (doc.y > pageH - 160) {
-    doc.addPage();
-  }
+  const FOOT = 56; // keep clear of footer
 
   const qText = cleanText(q.question);
   const opts = ["a", "b", "c", "d"] as const;
   const validOpts = opts.filter((l) => q.option[l] && String(q.option[l]).trim());
 
+  // — Measure everything with correct fonts before drawing —
+  doc.fontSize(10).font("Helvetica");
+  const qTextH = doc.heightOfString(qText, { width: innerW });
+
+  doc.fontSize(8.5).font("Helvetica");
+  const optHeights = validOpts.map((letter) => {
+    const val = cleanText(String(q.option[letter]));
+    const measured = doc.heightOfString(val, { width: innerW - 28 });
+    // for single-line options this equals 18 (same as before); multi-line options expand
+    return Math.max(18, Math.ceil(measured) + 6);
+  });
+  const optsH = optHeights.reduce((a, h) => a + h + 4, 0);
+
   const hasImg = !!(q.image && q.image.trim() && imageCache.has(q.image.trim()));
-  const estHeight = 24 + qText.length * 0.06 * 10 + (hasImg ? 160 : 0) + validOpts.length * 22 + 16;
-  if (doc.y + estHeight > pageH - 50) {
+  const imgH = hasImg ? 158 : 0;
+
+  let solH = 0;
+  if (showAnswers && q.solution) {
+    const sol = cleanText(q.solution).slice(0, 300);
+    if (sol.length > 5) {
+      doc.fontSize(8).font("Helvetica-Oblique");
+      solH = doc.heightOfString(`Solution: ${sol}`, { width: innerW }) + 8;
+    }
+  }
+
+  const totalH = 6 + qTextH + 8 + imgH + optsH + solH + 14;
+
+  // Break to a new page only when there genuinely isn't space
+  if (doc.y + totalH > pageH - FOOT && doc.y > 200) {
+    doc.addPage();
+  } else if (doc.y > pageH - FOOT - 80) {
     doc.addPage();
   }
 
+  // — Divider line —
   const startY = doc.y;
-
   doc.rect(margin, startY, contentW, 0.5).fill("#000000");
   doc.y = startY + 6;
 
+  // — Question number + text —
   const numY = doc.y;
   doc.fontSize(10).fillColor("#000000").font("Helvetica-Bold")
-    .text(`${num}.`, margin, numY, { width: 20 });
-
+    .text(`${num}.`, margin, numY, { width: 20, lineBreak: false });
   doc.fontSize(10).fillColor("#000000").font("Helvetica")
     .text(qText, margin + 22, numY, { width: innerW });
+  // doc.text with explicit y repositions cursor; y is now below qText
+  doc.y += 8;
 
-  doc.y += 6;
-
-  // — Embed question image if present —
+  // — Image —
   if (hasImg) {
     const imgBuf = imageCache.get(q.image!.trim())!;
-    const maxW = innerW;
-    const maxH = 150;
-    if (doc.y + maxH + 10 > pageH - 50) doc.addPage();
-    doc.image(imgBuf, margin + 22, doc.y, { fit: [maxW, maxH], align: "center" });
-    doc.y += maxH + 8;
+    if (doc.y + 160 > pageH - FOOT) doc.addPage();
+    doc.image(imgBuf, margin + 22, doc.y, { fit: [innerW, 150], align: "center" });
+    doc.y += 158;
   }
 
-  validOpts.forEach((letter) => {
+  // — Options (dynamically sized boxes) —
+  validOpts.forEach((letter, idx) => {
     const val = cleanText(String(q.option[letter]));
     if (!val) return;
 
-    if (doc.y > pageH - 60) doc.addPage();
+    if (doc.y > pageH - FOOT - 30) doc.addPage();
 
     const isCorrect = showAnswers && q.answer.toLowerCase() === letter;
     const optY = doc.y;
+    const optH = optHeights[idx];
 
-    doc.rect(margin + 22, optY, innerW, 18).fill("#ffffff").stroke("#cccccc");
+    doc.rect(margin + 22, optY, innerW, optH).fill("#ffffff").stroke("#cccccc");
 
     doc.fontSize(8.5).fillColor("#000000").font("Helvetica-Bold")
-      .text(`${letter.toUpperCase()}.`, margin + 28, optY + 4, { width: 16 });
+      .text(`${letter.toUpperCase()}.`, margin + 28, optY + 5, { width: 16, lineBreak: false });
 
     doc.fontSize(8.5).fillColor("#000000").font("Helvetica")
-      .text(val, margin + 46, optY + 4, { width: innerW - 28 });
+      .text(val, margin + 46, optY + 5, { width: innerW - 28 });
 
     if (isCorrect) {
-      doc.fontSize(8.5).fillColor("#000000").font("Helvetica-Bold")
-        .text("✓", margin + innerW + 8, optY + 4, { width: 14 });
+      doc.fontSize(9).fillColor("#22c55e").font("Helvetica-Bold")
+        .text("✓", margin + innerW + 6, optY + 5, { width: 16, lineBreak: false });
     }
 
-    doc.y = optY + 22;
+    doc.y = optY + optH + 4;
   });
 
+  // — Solution —
   if (showAnswers && q.solution) {
     const sol = cleanText(q.solution);
     if (sol && sol.length > 5) {
-      const solY = doc.y + 2;
-      doc.y = solY + 4;
-      doc.fontSize(8).fillColor("#000000").font("Helvetica-Oblique")
+      doc.y += 2;
+      doc.fontSize(8).fillColor("#555555").font("Helvetica-Oblique")
         .text(`Solution: ${sol.slice(0, 300)}`, margin + 22, doc.y, { width: innerW });
       doc.y += 4;
     }
   }
 
-  doc.y += 10;
+  doc.y += 12;
 }
 
 router.post("/generate", async (req: Request, res: Response) => {
