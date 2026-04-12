@@ -236,7 +236,7 @@ function drawSectionBanner(doc: PDFKit.PDFDocument, subject: string, _year: stri
   doc.y = y + 36;
 }
 
-function drawQuestion(doc: PDFKit.PDFDocument, q: AlocQuestion, num: number, showAnswers: boolean) {
+function drawQuestion(doc: PDFKit.PDFDocument, q: AlocQuestion, num: number, showAnswers: boolean, imageCache: Map<string, Buffer>) {
   const W = doc.page.width;
   const margin = 42;
   const contentW = W - margin * 2;
@@ -251,7 +251,8 @@ function drawQuestion(doc: PDFKit.PDFDocument, q: AlocQuestion, num: number, sho
   const opts = ["a", "b", "c", "d"] as const;
   const validOpts = opts.filter((l) => q.option[l] && String(q.option[l]).trim());
 
-  const estHeight = 24 + qText.length * 0.06 * 10 + validOpts.length * 22 + 16;
+  const hasImg = !!(q.image && q.image.trim() && imageCache.has(q.image.trim()));
+  const estHeight = 24 + qText.length * 0.06 * 10 + (hasImg ? 160 : 0) + validOpts.length * 22 + 16;
   if (doc.y + estHeight > pageH - 50) {
     doc.addPage();
   }
@@ -269,6 +270,16 @@ function drawQuestion(doc: PDFKit.PDFDocument, q: AlocQuestion, num: number, sho
     .text(qText, margin + 22, numY, { width: innerW });
 
   doc.y += 6;
+
+  // — Embed question image if present —
+  if (hasImg) {
+    const imgBuf = imageCache.get(q.image!.trim())!;
+    const maxW = innerW;
+    const maxH = 150;
+    if (doc.y + maxH + 10 > pageH - 50) doc.addPage();
+    doc.image(imgBuf, margin + 22, doc.y, { fit: [maxW, maxH], align: "center" });
+    doc.y += maxH + 8;
+  }
 
   validOpts.forEach((letter) => {
     const val = cleanText(String(q.option[letter]));
@@ -335,6 +346,25 @@ router.post("/generate", async (req: Request, res: Response) => {
       questionSets.push({ subject: detail.subject, year: detail.year || "Mixed", questions: qs });
     }
 
+    // — Pre-fetch question images —
+    const imageCache = new Map<string, Buffer>();
+    const imageUrls = new Set<string>();
+    for (const { questions } of questionSets) {
+      for (const q of questions) {
+        if (q.image && q.image.trim()) imageUrls.add(q.image.trim());
+      }
+    }
+    await Promise.all(
+      Array.from(imageUrls).map(async (url) => {
+        try {
+          const imgRes = await axios.get<ArrayBuffer>(url, { responseType: "arraybuffer", timeout: 12000 });
+          imageCache.set(url, Buffer.from(imgRes.data));
+        } catch {
+          console.warn(`[PDF] Could not fetch image: ${url}`);
+        }
+      })
+    );
+
     // — Build PDF buffer —
     const pdfBuffer = await new Promise<Buffer>((resolve, reject) => {
       const doc = new PDFDocument({
@@ -367,7 +397,7 @@ router.post("/generate", async (req: Request, res: Response) => {
               lastPassageKey = key;
             }
           }
-          drawQuestion(doc, q, qNum++, includeAnswers === true);
+          drawQuestion(doc, q, qNum++, includeAnswers === true, imageCache);
         }
       }
 
